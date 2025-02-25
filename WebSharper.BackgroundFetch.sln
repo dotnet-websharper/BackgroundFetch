@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WebSharper.BackgroundFetch", "WebSharper.BackgroundFetch\WebSharper.BackgroundFetch.fsproj", "{194C6A78-7840-42B8-AE23-72916DC5A6E1}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WebSharper.BackgroundFetch.Sample", "WebSharper.BackgroundFetch.Sample\WebSharper.BackgroundFetch.Sample.fsproj", "{97F07B99-FFA0-479D-9A66-DFF502E2275B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{194C6A78-7840-42B8-AE23-72916DC5A6E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{194C6A78-7840-42B8-AE23-72916DC5A6E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{194C6A78-7840-42B8-AE23-72916DC5A6E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97F07B99-FFA0-479D-9A66-DFF502E2275B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97F07B99-FFA0-479D-9A66-DFF502E2275B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97F07B99-FFA0-479D-9A66-DFF502E2275B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97F07B99-FFA0-479D-9A66-DFF502E2275B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
