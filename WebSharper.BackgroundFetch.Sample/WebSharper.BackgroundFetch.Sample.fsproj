@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,11 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="WebSharper" Version="8.0.0.512-beta2" />    
-    <PackageReference Include="WebSharper.FSharp" Version="8.0.0.512-beta2" />
-    <PackageReference Include="WebSharper.MathJS" Version="8.0.0.512-beta2" />
-    <PackageReference Include="WebSharper.UI" Version="8.0.0.512-beta2" />
-    <PackageReference Include="WebSharper.AspNetCore" Version="8.0.0.512-beta2" />
+    <PackageReference Include="WebSharper" Version="10.1.10.687" />
+    <PackageReference Include="WebSharper.FSharp" Version="10.1.10.687" />
+    <PackageReference Include="WebSharper.UI" Version="10.1.8.687" />
+    <PackageReference Include="WebSharper.AspNetCore" Version="10.1.10.687" />
   </ItemGroup>
 
   <ItemGroup>

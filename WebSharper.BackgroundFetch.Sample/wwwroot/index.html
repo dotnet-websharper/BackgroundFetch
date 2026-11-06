@@ -8,14 +8,33 @@
     <style>
         /* Don't show the not-yet-loaded templates */
         [ws-template], [ws-children-template] { display: none; }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            max-width: 40rem;
+            margin: 3rem auto;
+            padding: 0 1rem;
+            line-height: 1.5;
+        }
+        h1 { font-size: 1.5rem; }
+        button { margin-right: 0.5rem; padding: 0.4rem 0.9rem; }
+        #status { font-weight: 600; }
+        #progress { font-family: ui-monospace, monospace; color: #555; }
+        .hint { font-size: 0.875rem; color: #666; }
     </style>
     <script type="module" src="Content/WebSharper.BackgroundFetch.Sample.head.js"></script>
 </head>
 <body>
     <h1>Background Fetch API Demo</h1>
     <div id="main" ws-children-template="Main">
-        <button ws-onclick="startBackgroundFetch">Download File</button>
         <p id="status">${Status}</p>
+        <p id="progress">${Progress}</p>
+        <button ws-onclick="startBackgroundFetch">Start download</button>
+        <button ws-onclick="cancelBackgroundFetch">Cancel</button>
+        <p class="hint">
+            Downloads a 1.4&nbsp;MB sample file in the background. Progress is reported by the
+            <code>progress</code> event; completion is reported by the service worker.
+            Requires a Chromium-based browser with Background Fetch support.
+        </p>
     </div>
     <script type="module" src="Content/WebSharper.BackgroundFetch.Sample.min.js"></script>
 </body>

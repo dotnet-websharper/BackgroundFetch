@@ -1,32 +1,41 @@
 # WebSharper BackgroundFetch API Binding
 
-This repository provides an F# [WebSharper](https://websharper.com/) binding for the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API), enabling seamless background downloading of large resources in WebSharper applications.
+[![NuGet](https://img.shields.io/nuget/v/WebSharper.BackgroundFetch.svg)](https://www.nuget.org/packages/WebSharper.BackgroundFetch)
 
-## Repository Structure
+This repository provides an F# [WebSharper](https://websharper.com/) binding for the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API), enabling background downloads of large resources in WebSharper applications.
 
-The repository consists of two main projects:
+> **Browser support:** Background Fetch is currently a limited-availability, experimental API. It is implemented in Chromium-based browsers and requires a registered service worker and a secure context (HTTPS or `localhost`). Check [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API) for the latest compatibility information.
 
-1. **Binding Project**:
+## Repository structure
 
-   - Contains the F# WebSharper binding for the Background Fetch API.
+The repository contains two projects:
 
-2. **Sample Project**:
-   - Demonstrates how to use the Background Fetch API with WebSharper syntax.
-   - Includes a GitHub Pages demo: [View Demo](https://dotnet-websharper.github.io/BackgroundFetch/).
+1. **Binding project** (`WebSharper.BackgroundFetch`) — the F# WebSharper binding for the Background Fetch API.
+2. **Sample / test case** (`WebSharper.BackgroundFetch.Sample`) — an ASP.NET Core SPA that exercises the binding end to end. It registers a service worker, starts a background download of a bundled 1.4 MB sample file, displays `progress` events, supports cancellation, and handles the service worker's success/failure/abort/click events. See [Running the test case](#running-the-test-case).
+
+## Live demos
+
+**Try it live:** [Open the sample in your browser](https://dotnet-websharper.github.io/BackgroundFetch/)
+
+![Background Fetch API sample](docs/sample.png)
+
+The sample doubles as the binding's [test case](#running-the-test-case): it exercises the full API surface (service worker registration, background download, progress events, cancellation) in a real browser.
+
+- Binding sample (GitHub Pages): <https://dotnet-websharper.github.io/BackgroundFetch/>
+- Source: <https://github.com/dotnet-websharper/BackgroundFetch>
+- WebSharper bindings catalog: <https://websharper.com/bindings>
 
 ## Installation
 
-To use this package in your WebSharper project, add the NuGet package:
-
 ```bash
-   dotnet add package WebSharper.BackgroundFetch
+dotnet add package WebSharper.BackgroundFetch
 ```
 
 ## Building
 
 ### Prerequisites
 
-- [.NET SDK](https://dotnet.microsoft.com/download) installed on your machine.
+- [.NET SDK](https://dotnet.microsoft.com/download) 10.0 or later.
 
 ### Steps
 
@@ -37,26 +46,36 @@ To use this package in your WebSharper project, add the NuGet package:
    cd BackgroundFetch
    ```
 
-2. Build the Binding Project:
+2. Build the binding project:
 
    ```bash
    dotnet build WebSharper.BackgroundFetch/WebSharper.BackgroundFetch.fsproj
    ```
 
-3. Build and Run the Sample Project:
+3. Build and run the sample:
 
    ```bash
    cd WebSharper.BackgroundFetch.Sample
-   dotnet build
    dotnet run
    ```
 
-4. Open the hosted demo to see the Sample project in action:
-   [https://dotnet-websharper.github.io/BackgroundFetch/](https://dotnet-websharper.github.io/BackgroundFetch/)
+   Then open the URL printed in the console (by default `http://localhost:61714`).
 
-## Example Usage
+## Running the test case
 
-Below is an example of how to use the Background Fetch API in a WebSharper project:
+The sample doubles as the repository's test case. It covers:
+
+- registering `service-worker.js` and waiting for it to become ready;
+- calling `BackgroundFetchManager.Fetch` with a title and `downloadTotal`;
+- reading `BackgroundFetchRegistration.Downloaded` / `DownloadTotal` from `progress` events;
+- aborting an in-flight download with `BackgroundFetchRegistration.Abort`;
+- the service worker's `backgroundfetchsuccess`, `backgroundfetchfail`, `backgroundfetchabort`, and `backgroundfetchclick` events.
+
+Start the sample, click **Start download**, and watch the progress line update. Click **Cancel** to abort an active download. The service worker logs each lifecycle event to the console and shows a notification on success (when notification permission allows it).
+
+## Example usage
+
+Below is a condensed version of the sample. The binding exposes the API as regular .NET types; the service worker is a plain JavaScript file served from the site root.
 
 ```fsharp
 namespace WebSharper.BackgroundFetch.Sample
@@ -71,65 +90,84 @@ open WebSharper.BackgroundFetch
 
 [<JavaScript>]
 module Client =
-    // The templates are loaded from the DOM, so you can edit index.html
-    // and refresh your browser without recompiling unless you add or remove holes.
     type IndexTemplate = Template<"wwwroot/index.html", ClientLoad.FromDocument>
 
-    // Variable to track the status of the background fetch operation.
-    let status = Var.Create "Click the button to start downloading..."
+    let status = Var.Create "Click “Start download” to begin."
+    let progress = Var.Create ""
 
-    let startBackgroundFetch() =
+    let getServiceWorkerRegistration () =
         promise {
-            try
-                let serviceWorker = JS.Window.Navigator?serviceWorker
-                let serviceWorkerController = serviceWorker?controller
+            let container = JS.Window.Navigator?serviceWorker
+            if isNull container then
+                status := "Service workers are not supported in this browser."
+                return None
+            else
+                let! _ = container?register("service-worker.js") |> As<Promise<obj>>
+                let! registration = container?ready |> As<Promise<obj>>
+                return Some registration
+        }
 
-                // Check if the service worker is available, if not, register it.
-                if not(serviceWorkerController) then
-                    let serviceWorkerRegister = serviceWorker?register("service-worker.js")
-                    do! serviceWorkerRegister |> As<Promise<unit>>
-                else
-                    // Retrieve the ready state of the service worker.
-                    let! registration = serviceWorker?ready |> As<Promise<obj>>
-                    let bgFetch = registration?backgroundFetch |> As<BackgroundFetchManager>
-
-                    // Start fetching the file in the background.
-                    let! bgFetchRegistration = bgFetch.Fetch("file-download", [| "https://th.bing.com/th/id/OIP.kNs4ljTKUnPaBhUzwTScvwHaE8?rs=1&pid=ImgDetMain" |])
-
-                    status := "Downloading in the background..."
-
-                    // Listen for progress events to update the download status.
-                    bgFetchRegistration.AddEventListener("progress", fun (evt: Dom.Event) ->
-                        status := $"Downloaded {bgFetchRegistration.Downloaded} of {bgFetchRegistration.DownloadTotal} bytes"
+    let startBackgroundFetch () =
+        promise {
+            match! getServiceWorkerRegistration () with
+            | None -> ()
+            | Some registration ->
+                let bgFetch = registration?backgroundFetch |> As<BackgroundFetchManager>
+                let options =
+                    BackgroundFetchOptions(
+                        Title = "WebSharper background fetch demo",
+                        DownloadTotal = 1048576.0
                     )
+                let! registration =
+                    bgFetch.Fetch("websharper-demo", [| "sample-data.txt" |], options)
 
-            with error ->
-                // Handle errors and display a failure message.
-                status := "Background fetch failed!"
-                printfn($"Background Fetch Error: {error.Message}")
+                status := "Download started in the background…"
+                registration.AddEventListener("progress", fun (_: Dom.Event) ->
+                    let pct =
+                        if registration.DownloadTotal > 0.0 then
+                            registration.Downloaded / registration.DownloadTotal * 100.0
+                        else 0.0
+                    progress := sprintf "%.0f%%" pct
+                )
         }
 
     [<SPAEntryPoint>]
     let Main () =
-
         IndexTemplate.Main()
-            // Bind the status variable to the UI.
             .Status(status.V)
-            // Attach event handler to the background fetch button.
+            .Progress(progress.V)
             .startBackgroundFetch(fun _ ->
-                async {
-                    do! startBackgroundFetch().AsAsync()
-                }
-                |> Async.Start
+                async { do! startBackgroundFetch().AsAsync() } |> Async.StartImmediate
             )
             .Doc()
         |> Doc.RunById "main"
 ```
 
-This example demonstrates how to initiate a background fetch request using the Background Fetch API in a WebSharper project.
+The companion `service-worker.js` handles the lifecycle events:
 
-## Important Considerations
+```js
+self.addEventListener("backgroundfetchsuccess", (event) => {
+  const registration = event.registration;
+  event.waitUntil((async () => {
+    const records = await registration.matchAll();
+    for (const record of records) {
+      const response = await record.responseReady;
+      console.log(record.request.url, response.status);
+    }
+    await self.registration.showNotification("Background fetch complete", {
+      body: `Downloaded ${registration.downloaded} of ${registration.downloadTotal} bytes.`,
+    });
+  })());
+});
+```
 
-- **Service Worker Requirement**: The Background Fetch API requires a registered Service Worker to function properly.
-- **Permissions**: Users must grant permission for background operations when prompted by the browser.
-- **Limited Browser Support**: Some browsers may not fully support the Background Fetch API; check [MDN Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API) for the latest compatibility information.
+## Important considerations
+
+- **Service worker required**: the Background Fetch API only works through a registered service worker.
+- **Secure context**: it requires HTTPS or `localhost`.
+- **Browser support**: limited to Chromium-based browsers today; check MDN for the current matrix.
+- **Permissions**: users may be prompted for background operation and notification permissions.
+
+## License
+
+Apache 2.0 — see the [WebSharper core repository](https://github.com/dotnet-websharper/core/blob/master/LICENSE.md).
