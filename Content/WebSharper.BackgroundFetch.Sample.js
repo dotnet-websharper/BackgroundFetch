@@ -1,49 +1,126 @@
-import { Start as Start_1 } from "./WebSharper.Core.JavaScript/Runtime.js"
-import { Lazy, MarkResizable, SetOptional, Force, GetOptional, CreateFuncWithArgs, DeleteEmptyFields, Create as Create_1, OnLoad } from "./WebSharper.Core.JavaScript/Runtime.js"
+import Runtime from "./WebSharper.Core.JavaScript/Runtime.js"
+Runtime.ScriptBasePath="/Scripts/";
+import { MarkResizable, SetOptional, Lazy, GetOptional, CreateFuncWithArgs, DeleteEmptyFields, Create as Create_1 } from "./WebSharper.Core.JavaScript/Runtime.js"
 function isIDisposable(x){
   return"Dispose"in x;
 }
 function Main(){
-  const this_1=new _c_2("New_1");
-  const t=(this_1.h.push(new _c_6("status", status().View)),this_1);
-  const b=(t.h.push(EventQ2(t.k, "startbackgroundfetch", () => t.i, () => {
-    const _3=null;
-    Start(Delay(() => Bind(AsAsync(startBackgroundFetch()), () => Return(null))), null);
+  listenForServiceWorkerMessages();
+  const this_1=new ProviderBuilder("New_1");
+  const this_2=(this_1.h.push(new TextView("status", status().View)),this_1);
+  const t=(this_2.h.push(new TextView("progress", progress().View)),this_2);
+  const t_1=(t.h.push(EventQ2(t.k, "startbackgroundfetch", () => t.i, () => {
+    const f=() => {
+      const x=AsAsync(startBackgroundFetch());
+      const f_1=() => Return(null);
+      return Bind(x, (_5, _6) =>(f_1(_5))(_6));
+    };
+    let _3=Delay((_5, _6) =>(f(_5))(_6));
+    let _4=_3;
+    StartImmediate(_4, null);
   })),t);
+  const b=(t_1.h.push(EventQ2(t_1.k, "cancelbackgroundfetch", () => t_1.i, () => {
+    const f=() => {
+      const x=AsAsync(cancelBackgroundFetch());
+      const f_1=() => Return(null);
+      return Bind(x, (_5, _6) =>(f_1(_5))(_6));
+    };
+    let _3=Delay((_5, _6) =>(f(_5))(_6));
+    let _4=_3;
+    StartImmediate(_4, null);
+  })),t_1);
   const p=CompleteHoles(b.k, b.h, []);
-  const i=new _c_1(p[1], main(p[0]));
+  const i=new TemplateInstance(p[1], main(p[0]));
   let _1=(b.i=i,i);
   const _2=_1.Doc;
   LoadLocalTemplates("");
-  _c_10.RunById("main", _2);
+  Doc.RunById("main", _2);
+}
+function listenForServiceWorkerMessages(){
+  const container=globalThis.navigator.serviceWorker;
+  if(!(container==null))container.addEventListener("message", (evt) => {
+    const data=evt.data;
+    if(!(data==null)){
+      const messageType=data.type;
+      if(messageType=="backgroundfetchsuccess"){
+        status().Set("Background fetch completed successfully.");
+        const downloaded=data.downloaded;
+        const total=data.downloadTotal;
+        progress().Set(((((_1) =>(_2) =>(_3) => _1("100% \u2014 "+String(_2)+" / "+String(_3)+" bytes"))((x) => x))(toInt(downloaded)))(toInt(total)));
+      }
+      else messageType=="backgroundfetchfail"?(status().Set("Background fetch failed."),progress().Set("")):messageType=="backgroundfetchabort"?(status().Set("Background fetch aborted."),progress().Set("")):void 0;
+    }
+    else void 0;
+  });
+}
+function progress(){
+  return _c.progress;
 }
 function status(){
-  return _c_7.status;
+  return _c.status;
 }
 function startBackgroundFetch(){
-  const _1=null;
-  return new Promise((_2) => {
-    _2(new Promise((_3) => {
-      const serviceWorker=globalThis.navigator.serviceWorker;
-      let _4=!serviceWorker.controller?serviceWorker.register("service-worker.js").then(() => Promise.resolve(null)):serviceWorker.ready.then((d) => d.backgroundFetch.fetch("file-download", ["https://th.bing.com/th/id/OIP.kNs4ljTKUnPaBhUzwTScvwHaE8?rs=1&pid=ImgDetMain"]).then((d_1) => {
-        status().Set("Downloading in the background...");
-        d_1.addEventListener("progress", () => status().Set("Downloaded "+String(d_1.downloaded)+" of "+String(d_1.downloadTotal)+" bytes"));
-        return Promise.resolve(null);
+  return new Promise((_1) => {
+    _1(new Promise((_2) => {
+      _2(getServiceWorkerRegistration().then((d) => {
+        let r;
+        if(d!=null&&d.$==1){
+          const bgFetch=d.$0.backgroundFetch;
+          return bgFetch==null?(status().Set("Background Fetch API is not available in this browser."),Promise.resolve(null)):bgFetch.fetch("websharper-demo", ["sample-data.txt"], (r={},r.title="WebSharper background fetch demo",r.downloadTotal=1500000,r)).then((d_1) => {
+            set_activeRegistration(d_1);
+            status().Set("Download started in the background\u2026");
+            const initialTotal=d_1.downloadTotal;
+            const initialDownloaded=d_1.downloaded;
+            progress().Set(initialTotal>0?(((((_3) =>(_4) =>(_5) =>(_6) => _3(_4.toFixed(0)+"% \u2014 "+String(_5)+" / "+String(_6)+" bytes"))((x) => x))(initialDownloaded/initialTotal*100))(toInt(initialDownloaded)))(toInt(initialTotal)):"0%");
+            d_1.addEventListener("progress", () => {
+              const downloaded=d_1.downloaded;
+              const total=d_1.downloadTotal;
+              return progress().Set((((((_3) =>(_4) =>(_5) =>(_6) => _3(_4.toFixed(0)+"% \u2014 "+String(_5)+" / "+String(_6)+" bytes"))((x) => x))(total>0?downloaded/total*100:0))(toInt(downloaded)))(toInt(total)));
+            });
+            return Promise.resolve(null);
+          });
+        }
+        else return Promise.resolve(null);
       }));
-      _3(_4);
     })["catch"]((d) => {
       const a=unwrapExn(d);
-      status().Set("Background fetch failed!");
-      const _3=a.message;
-      (((_4) => _4("Background Fetch Error: "+String(_3)))((s) => {
-        console.log(s);
-      }));
+      status().Set("Background fetch failed: "+a.message);
       return Promise.resolve(null);
     }));
   });
 }
+function cancelBackgroundFetch(){
+  return new Promise((_1) => {
+    _1(activeRegistration()==null?(status().Set("No active download to cancel."),Promise.resolve(null)):activeRegistration().abort().then(() => {
+      set_activeRegistration(null);
+      status().Set("Download cancelled.");
+      progress().Set("");
+      return Promise.resolve(null);
+    }));
+  });
+}
+function getServiceWorkerRegistration(){
+  return new Promise((_1) => {
+    const container=globalThis.navigator.serviceWorker;
+    let _2=container==null?(status().Set("Service workers are not supported in this browser."),Promise.resolve(null)):container.register("service-worker.js").then(() => container.ready.then((d) => Promise.resolve(Some(d))));
+    _1(_2);
+  });
+}
+function set_activeRegistration(_1){
+  _c.activeRegistration=_1;
+}
+function activeRegistration(){
+  return _c.activeRegistration;
+}
+function toInt(x){
+  const u=toUInt(x);
+  return u>2147483647?u-4294967296:u;
+}
 function FailWith(msg){
   throw new Error(msg);
+}
+function toUInt(x){
+  return(x<0?Math.ceil(x):Math.floor(x))>>>0;
 }
 function KeyValue(kvp){
   return[kvp.K, kvp.V];
@@ -52,21 +129,15 @@ function range(min, max_1){
   const count=1+max_1-min;
   return count<=0?[]:init(count, (x) => x+min);
 }
-let _c=Lazy((_i) => class Object_1 {
-  static {
-    _c=_i(this);
-  }
+class Object_1 {
   Equals(obj){
     return this===obj;
   }
   GetHashCode(){
     return -1;
   }
-});
-let _c_1=Lazy((_i) => class TemplateInstance extends _c {
-  static {
-    _c_1=_i(this);
-  }
+}
+class TemplateInstance extends Object_1 {
   doc;
   allVars;
   anchorRoot;
@@ -82,7 +153,7 @@ let _c_1=Lazy((_i) => class TemplateInstance extends _c {
     this.allVars=c.$==0?c.$0:FailWith("Should not happen");
     this.anchorRoot=null;
   }
-});
+}
 function get(arr, n){
   checkBounds(arr, n);
   return arr[n];
@@ -97,17 +168,11 @@ function checkBounds(arr, n){
 function length(arr){
   return arr.dims===2?arr.length*arr.length:arr.length;
 }
-let _c_2=Lazy((_i) => class ProviderBuilder extends _c {
-  static {
-    _c_2=_i(this);
-  }
+class ProviderBuilder extends Object_1 {
   i;
   k;
   h;
   s;
-  static New_1(){
-    return new this("New_1");
-  }
   constructor(i){
     if(i=="New_1"){
       let c;
@@ -118,11 +183,8 @@ let _c_2=Lazy((_i) => class ProviderBuilder extends _c {
       SetOptional(this, "s", null);
     }
   }
-});
-let _c_3=Lazy((_i) => class TemplateHole extends _c {
-  static {
-    _c_3=_i(this);
-  }
+}
+class TemplateHole extends Object_1 {
   ForTextView(){
     console.warn("Content hole filled with attribute data", this.Name);
     return null;
@@ -134,14 +196,10 @@ let _c_3=Lazy((_i) => class TemplateHole extends _c {
     console.warn("Attribute value hole filled with non-text data", this.Name);
     return Choice1Of2("");
   }
-});
-let _c_4=Lazy((_i) => class Var extends _c {
-  static {
-    _c_4=_i(this);
-  }
-});
+}
+class Var extends Object_1 { }
 function EventQ2(_1, holeName, ti, f){
-  return new _c_8(holeName, (el) =>(ev) => {
+  return new EventQ(holeName, "", (el) =>(ev) => {
     const i=ti();
     i.SetAnchorRoot(el);
     return f({
@@ -153,8 +211,9 @@ function EventQ2(_1, holeName, ti, f){
   });
 }
 function CompleteHoles(key, filledHoles, vars){
-  const allVars=new _c_11("New_5");
-  const filledVars=new _c_13("New_3");
+  let _1;
+  const allVars=new Dictionary("New_5");
+  const filledVars=new HashSet("New_3");
   const e=Get(filledHoles);
   try {
     while(e.MoveNext())
@@ -164,43 +223,51 @@ function CompleteHoles(key, filledHoles, vars){
         filledVars.SAdd(n);
         allVars.set_Item(n, h);
       }
+    _1=void 0;
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _2=e;
+    if(typeof _2=="object"&&isIDisposable(_2))e.Dispose();
   }
-  return[append(filledHoles, choose((_1) => {
-    const name=_1[0];
-    const ty=_1[1];
-    const d=_1[2];
+  return[append(filledHoles, choose((_3) => {
+    const name=_3[0];
+    const ty=_3[1];
+    const d=_3[2];
     if(filledVars.Contains(name))return null;
     else {
-      const r=ty===0?_c_14.GetOrAddHoleFor(key, name, () => {
+      const r=ty===0?_c_2.GetOrAddHoleFor(key, name, () => {
         const o=d==null?null:Some(d.$0);
-        let _2=_c_12.Create_1(o==null?"":o.$0);
-        return new _c_15(name, _2);
-      }):ty===1?_c_14.GetOrAddHoleFor(key, name, () => {
+        let _4=o==null?"":o.$0;
+        let _5=_c_1.Create_1(_4);
+        return new VarStr(name, _5);
+      }):ty===1?_c_2.GetOrAddHoleFor(key, name, () => {
         const o=d==null?null:Some(d.$0);
-        let _2=_c_12.Create_1(o==null?0:o.$0);
-        return new _c_16(name, _2);
-      }):ty===2?_c_14.GetOrAddHoleFor(key, name, () => {
+        let _4=o==null?0:o.$0;
+        let _5=_c_1.Create_1(_4);
+        return new VarFloatUnchecked(name, _5);
+      }):ty===2?_c_2.GetOrAddHoleFor(key, name, () => {
         const o=d==null?null:Some(d.$0);
-        let _2=_c_12.Create_1(o==null?false:o.$0);
-        return new _c_17(name, _2);
-      }):ty===3?_c_14.GetOrAddHoleFor(key, name, () => {
+        let _4=o==null?false:o.$0;
+        let _5=_c_1.Create_1(_4);
+        return new VarBool(name, _5);
+      }):ty===3?_c_2.GetOrAddHoleFor(key, name, () => {
         const o=d==null?null:Some(d.$0);
-        let _2=_c_12.Create_1(o==null?-8640000000000000:o.$0);
-        return new _c_18(name, _2);
-      }):ty===4?_c_14.GetOrAddHoleFor(key, name, () => new _c_19(name, _c_12.Create_1([]))):ty===5?_c_14.GetOrAddHoleFor(key, name, () => new _c_20(name, _c_12.Create_1(Some(globalThis.document.querySelector("[ws-dom="+name+"]"))))):ty===6?_c_14.GetOrAddHoleFor(key, name, () => {
+        let _4=o==null?-8640000000000000:o.$0;
+        let _5=_c_1.Create_1(_4);
+        return new VarDateTime(name, _5);
+      }):ty===4?_c_2.GetOrAddHoleFor(key, name, () => new VarFile(name, _c_1.Create_1([]))):ty===5?_c_2.GetOrAddHoleFor(key, name, () => new VarDomElement(name, _c_1.Create_1(Some(globalThis.document.querySelector("[ws-dom="+name+"]"))))):ty===6?_c_2.GetOrAddHoleFor(key, name, () => {
         const o=d==null?null:Some(d.$0);
-        let _2=_c_12.Create_1(o==null?[]:o.$0);
-        return new _c_21(name, _2);
-      }):FailWith("Invalid value type");
+        let _4=o==null?[]:o.$0;
+        let _5=_c_1.Create_1(_4);
+        return new VarStrList(name, _5);
+      }):FailWith("Invalid kind for template Var type: "+String(ty));
       allVars.set_Item(name, r);
       return Some(r);
     }
   }, vars)), {$:0, $0:allVars}];
 }
 function Equals(a, b){
+  let _1;
   if(a===b)return true;
   else {
     const m=typeof a;
@@ -211,19 +278,23 @@ function Equals(a, b){
       else if(a instanceof Array&&b instanceof Array)return arrayEquals(a, b);
       else if(a instanceof Date&&b instanceof Date)return dateEquals(a, b);
       else {
+        const a_1=a;
+        const b_1=b;
         const eqR=[true];
         let k;
-        for(var k_2 in a)if(((k_3) => {
-          eqR[0]=!a.hasOwnProperty(k_3)||b.hasOwnProperty(k_3)&&Equals(a[k_3], b[k_3]);
+        for(var k_2 in a_1)if(((k_3) => {
+          eqR[0]=!a_1.hasOwnProperty(k_3)||b_1.hasOwnProperty(k_3)&&Equals(a_1[k_3], b_1[k_3]);
           return!eqR[0];
         })(k_2))break;
         if(eqR[0]){
           let k_1;
-          for(var k_3 in b)if(((k_4) => {
-            eqR[0]=!b.hasOwnProperty(k_4)||a.hasOwnProperty(k_4);
+          for(var k_3 in b_1)if(((k_4) => {
+            eqR[0]=!b_1.hasOwnProperty(k_4)||a_1.hasOwnProperty(k_4);
             return!eqR[0];
           })(k_3))break;
+          _1=void 0;
         }
+        else _1=null;
         return eqR[0];
       }
     }
@@ -231,8 +302,7 @@ function Equals(a, b){
   }
 }
 function arrayEquals(a, b){
-  let eq;
-  let i;
+  let eq, i;
   if(length(a)===length(b)){
     eq=true;
     i=0;
@@ -250,7 +320,7 @@ function dateEquals(a, b){
 }
 function Hash(o){
   const m=typeof o;
-  return m=="function"?0:m=="boolean"?o?1:0:m=="number"?o:m=="string"?hashString(o):m=="object"?o==null?0:o instanceof Array?hashArray(o):hashObject(o):0;
+  return m=="function"?0:m=="boolean"?o?1:0:m=="number"?o:m=="string"?hashString(o):m=="object"?o==null?0:o instanceof Array?hashArray(o):hashObject(o):m=="bigint"?hashString(String(o)):m=="symbol"?hashString(o.description):0;
 }
 function hashString(s){
   let hash;
@@ -262,17 +332,19 @@ function hashString(s){
   }
 }
 function hashArray(o){
-  let h=-34948909;
+  let h;
+  h=-34948909;
   for(let i=0, _1=length(o)-1;i<=_1;i++)h=hashMix(h, Hash(get(o, i)));
   return h;
 }
 function hashObject(o){
   if("GetHashCode"in o)return o.GetHashCode();
   else {
+    const ____=hashMix;
     const h=[0];
     let k;
     for(var k_1 in o)if(((key) => {
-      h[0]=hashMix(hashMix(h[0], hashString(key)), Hash(o[key]));
+      h[0]=____(____(h[0], hashString(key)), Hash(o[key]));
       return false;
     })(k_1))break;
     return h[0];
@@ -285,14 +357,13 @@ function Compare(a, b){
   if(a===b)return 0;
   else {
     const m=typeof a;
-    switch(m=="function"?1:m=="boolean"?2:m=="number"?2:m=="string"?2:m=="object"?3:0){
+    switch(m=="boolean"?1:m=="number"?1:m=="bigint"?1:m=="string"?1:m=="object"?2:m=="function"?3:m=="symbol"?4:0){
       case 0:
         return typeof b=="undefined"?0:-1;
       case 1:
-        return FailWith("Cannot compare function values.");
-      case 2:
         return a<b?-1:1;
-      case 3:
+      case 2:
+        let _1;
         if(a===null)return -1;
         else if(b===null)return 1;
         else if("CompareTo"in a)return a.CompareTo(b);
@@ -300,22 +371,29 @@ function Compare(a, b){
         else if(a instanceof Array&&b instanceof Array)return compareArrays(a, b);
         else if(a instanceof Date&&b instanceof Date)return compareDates(a, b);
         else {
+          const a_1=a;
+          const b_1=b;
           const cmp=[0];
           let k;
-          for(var k_2 in a)if(((k_3) =>!a.hasOwnProperty(k_3)?false:!b.hasOwnProperty(k_3)?(cmp[0]=1,true):(cmp[0]=Compare(a[k_3], b[k_3]),cmp[0]!==0))(k_2))break;
+          for(var k_2 in a_1)if(((k_3) =>!a_1.hasOwnProperty(k_3)?false:!b_1.hasOwnProperty(k_3)?(cmp[0]=1,true):(cmp[0]=Compare(a_1[k_3], b_1[k_3]),cmp[0]!==0))(k_2))break;
           if(cmp[0]===0){
             let k_1;
-            for(var k_3 in b)if(((k_4) =>!b.hasOwnProperty(k_4)?false:!a.hasOwnProperty(k_4)&&(cmp[0]=-1,true))(k_3))break;
+            for(var k_3 in b_1)if(((k_4) =>!b_1.hasOwnProperty(k_4)?false:!a_1.hasOwnProperty(k_4)&&(cmp[0]=-1,true))(k_3))break;
+            _1=void 0;
           }
+          else _1=null;
           return cmp[0];
         }
         break;
+      case 3:
+        return FailWith("Cannot compare function values.");
+      case 4:
+        return FailWith("Cannot compare symbol values.");
     }
   }
 }
 function compareArrays(a, b){
-  let cmp;
-  let i;
+  let cmp, i;
   if(length(a)<length(b))return -1;
   else if(length(a)>length(b))return 1;
   else {
@@ -333,64 +411,81 @@ function compareDates(a, b){
   return Compare(a.getTime(), b.getTime());
 }
 function main(h){
+  let n=Some("main");
   LoadLocalTemplates("index");
-  return h?NamedTemplate("index", Some("main"), h):void 0;
+  return h?NamedTemplate("index", n, h):void 0;
 }
-let _c_5=Lazy((_i) => {
-  Force(_c_3);
-  return class Text extends _c_3 {
-    static {
-      _c_5=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    get Value(){
-      return this.fillWith;
-    }
-    get AsChoiceView(){
-      return Choice1Of2(this.fillWith);
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_6=Lazy((_i) => {
-  Force(_c_3);
-  return class TextView extends _c_3 {
-    static {
-      _c_6=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(this.fillWith);
-    }
-    get AsChoiceView(){
-      return Choice2Of2(this.fillWith);
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_7=Lazy((_i) => class $StartupCode_Client {
-  static {
-    _c_7=_i(this);
+function NewFromSeq(fields){
+  let _1;
+  const r={};
+  const e=Get(fields);
+  try {
+    while(e.MoveNext())
+      {
+        const f=e.Current;
+        r[f[0]]=f[1];
+      }
+    _1=void 0;
   }
+  finally {
+    const _2=e;
+    if(typeof _2=="object"&&isIDisposable(_2))e.Dispose();
+  }
+  return r;
+}
+function GetFieldValues(o){
+  let r=[];
+  let k;
+  for(var k_1 in o)r.push(o[k_1]);
+  return r;
+}
+class Text extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  get Value(){
+    return this.fillWith;
+  }
+  get AsChoiceView(){
+    return Choice1Of2(this.fillWith);
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class TextView extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(this.fillWith);
+  }
+  get AsChoiceView(){
+    return Choice2Of2(this.fillWith);
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+let _c=Lazy((_i) => class $StartupCode_Client {
+  static {
+    _c=_i(this);
+  }
+  static activeRegistration;
+  static progress;
   static status;
   static {
-    this.status=_c_12.Create_1("Click the button to start downloading...");
+    this.status=_c_1.Create_1("Click \u201cStart download\u201d to begin.");
+    this.progress=_c_1.Create_1("");
+    this.activeRegistration=null;
   }
 });
 function NewGuid(){
@@ -400,46 +495,27 @@ function NewGuid(){
     return v.toString(16);
   });
 }
-let _c_8=Lazy((_i) => {
-  Force(_c_3);
-  return class EventQ extends _c_3 {
-    static {
-      _c_8=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    get Value(){
-      return this.fillWith;
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-function NewFromSeq(fields){
-  const r={};
-  const e=Get(fields);
-  try {
-    while(e.MoveNext())
-      {
-        const f=e.Current;
-        r[f[0]]=f[1];
-      }
+class EventQ extends TemplateHole {
+  name;
+  key;
+  fillWith;
+  get Name(){
+    return this.name;
   }
-  finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+  get Value(){
+    return this.fillWith;
   }
-  return r;
+  constructor(name, key, fillWith){
+    super();
+    this.name=name;
+    this.key=key;
+    this.fillWith=fillWith;
+  }
 }
 function Delay(mk){
   return(c) => {
     try {
-      (mk())(c);
+      mk(null, c);
     }
     catch(e){
       c.k(No(e));
@@ -453,7 +529,7 @@ function Bind(r, f){
         const x=a.$0;
         scheduler().Fork(() => {
           try {
-            (f(x))(c);
+            f(x, c);
           }
           catch(e){
             c.k(No(e));
@@ -471,14 +547,12 @@ function Return(x){
     c.k(Ok(x));
   };
 }
-function Start(c, ctOpt){
+function StartImmediate(c, ctOpt){
   const d=(defCTS())[0];
   const ct=ctOpt==null?d:ctOpt.$0;
-  scheduler().Fork(() => {
-    if(!ct.c)c(New((a) => {
-      if(a.$==1)UncaughtAsyncError(a.$0);
-    }, ct));
-  });
+  if(!ct.c)c(New((a) => {
+    if(a.$==1)UncaughtAsyncError(a.$0);
+  }, ct));
 }
 function checkCancel(r){
   return(c) => {
@@ -487,16 +561,16 @@ function checkCancel(r){
   };
 }
 function defCTS(){
-  return _c_26.defCTS;
+  return _c_3.defCTS;
 }
 function UncaughtAsyncError(e){
   console.log("WebSharper: Uncaught asynchronous exception", e);
 }
 function cancel(c){
-  c.k(Cc(new _c_30("New", c.ct)));
+  c.k(Cc(new OperationCanceledException("New", c.ct)));
 }
 function scheduler(){
-  return _c_26.scheduler;
+  return _c_3.scheduler;
 }
 function FromContinuations(subscribe){
   return(c) => {
@@ -524,7 +598,16 @@ function FromContinuations(subscribe){
   };
 }
 function Zero(){
-  return _c_26.Zero;
+  return _c_3.Zero;
+}
+function Start(c, ctOpt){
+  const d=(defCTS())[0];
+  const ct=ctOpt==null?d:ctOpt.$0;
+  scheduler().Fork(() => {
+    if(!ct.c)c(New((a) => {
+      if(a.$==1)UncaughtAsyncError(a.$0);
+    }, ct));
+  });
 }
 function AsAsync(p){
   return FromContinuations((ok, ko) => {
@@ -532,19 +615,9 @@ function AsAsync(p){
   });
 }
 function unwrapExn(x){
-  return x instanceof Error?x:new _c_25(x);
+  return x instanceof Error?x:new NonStandardPromiseRejectionException(x);
 }
-function GetFieldValues(o){
-  let r=[];
-  let k;
-  for(var k_1 in o)r.push(o[k_1]);
-  return r;
-}
-let _c_9=Lazy((_i) => class Exception extends _c {
-  static {
-    _c_9=_i(this);
-  }
-});
+class Exception extends Object_1 { }
 function Some(Value_1){
   return{$:1, $0:Value_1};
 }
@@ -557,17 +630,17 @@ function NamedTemplate(baseName, name, fillWith){
   const m=(o=null,[LoadedTemplateFile(baseName).TryGetValue(name==null?"":name.$0, {get:() => o, set:(v) => {
     o=v;
   }}), o]);
-  return m[0]?ChildrenTemplate(m[1].cloneNode(true), fillWith):(console.warn("Local template doesn't exist", name),_c_10.Empty);
+  return m[0]?ChildrenTemplate(m[1].cloneNode(true), fillWith):(console.warn("Local template doesn't exist", name),Doc.Empty);
 }
 function LocalTemplatesLoaded(){
-  return _c_28.LocalTemplatesLoaded;
+  return _c_4.LocalTemplatesLoaded;
 }
 function set_LocalTemplatesLoaded(_1){
-  _c_28.LocalTemplatesLoaded=_1;
+  _c_4.LocalTemplatesLoaded=_1;
 }
 function LoadNestedTemplates(root, baseName){
   const loadedTpls=LoadedTemplateFile(baseName);
-  const rawTpls=new _c_11("New_5");
+  const rawTpls=new Dictionary("New_5");
   const wsTemplates=root.querySelectorAll("[ws-template]");
   for(let i=0, _1=wsTemplates.length-1;i<=_1;i++){
     const node=wsTemplates[i];
@@ -592,7 +665,7 @@ function LoadNestedTemplates(root, baseName){
     const node_3=html5TemplateBasedTemplates_1[i_3];
     rawTpls.set_Item(node_3.getAttribute("name").toLowerCase(), FakeRootFromHTMLTemplate(node_3));
   }
-  const instantiated=new _c_13("New_3");
+  const instantiated=new HashSet("New_3");
   function prepareTemplate(name_2){
     if(!loadedTpls.ContainsKey(name_2)){
       let o;
@@ -611,7 +684,7 @@ function LoadNestedTemplates(root, baseName){
     prepareTemplate(head(rawTpls.Keys));
 }
 function LoadedTemplates(){
-  return _c_28.LoadedTemplates;
+  return _c_4.LoadedTemplates;
 }
 function LoadedTemplateFile(name){
   let o;
@@ -620,7 +693,7 @@ function LoadedTemplateFile(name){
   }}), o]);
   if(m[0])return m[1];
   else {
-    const d=new _c_11("New_5");
+    const d=new Dictionary("New_5");
     LoadedTemplates().set_Item(name, d);
     return d;
   }
@@ -631,20 +704,20 @@ function ChildrenTemplate(el, fillWith){
   const updates=p[1];
   const docTreeNode=p[0];
   const m=docTreeNode.Els;
-  return!Equals(m, null)&&m.length===1&&(get(m, 0)instanceof Node&&(Equals(get(m, 0).nodeType, Node.ELEMENT_NODE)&&(_1=get(m, 0),true)))?_c_32.TreeNode(docTreeNode, updates):_c_10.Mk(TreeDoc(docTreeNode), updates);
+  return!Equals(m, null)&&m.length===1&&(get(m, 0)instanceof Node&&(Equals(get(m, 0).nodeType, Node.ELEMENT_NODE)&&(_1=get(m, 0),true)))?Elt.TreeNode(docTreeNode, updates):Doc.Mk(TreeDoc(docTreeNode), updates);
 }
 function FakeRootSingle(el){
+  let _1;
   el.removeAttribute("ws-template");
   const m=el.getAttribute("ws-replace");
-  if(m==null){ }
+  if(m==null)_1=null;
   else {
     el.removeAttribute("ws-replace");
     const m_1=el.parentNode;
-    if(Equals(m_1, null)){ }
+    if(Equals(m_1, null))_1=null;
     else {
       const n=globalThis.document.createElement(el.tagName);
-      n.setAttribute("ws-replace", m);
-      m_1.replaceChild(n, el);
+      _1=(n.setAttribute("ws-replace", m),void m_1.replaceChild(n, el));
     }
   }
   const fakeroot=globalThis.document.createElement("div");
@@ -664,7 +737,7 @@ function FakeRootFromHTMLTemplate(parent){
   return fakeroot;
 }
 function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
-  const processedHTML5Templates=new _c_13("New_3");
+  const processedHTML5Templates=new HashSet("New_3");
   function recF(recI, _1){
     while(true)
       switch(recI){
@@ -672,12 +745,14 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
           if(_1!==null){
             const next=_1.nextSibling;
             if(Equals(_1.nodeType, Node.TEXT_NODE))convertTextNode(_1);
-            else if(Equals(_1.nodeType, Node.ELEMENT_NODE))convertElement(_1);
+            else Equals(_1.nodeType, Node.ELEMENT_NODE)?convertElement(_1):null;
             _1=next;
           }
           else return null;
           break;
         case 1:
+          let _2;
+          let _3;
           const name_2=string(_1.nodeName, Some(3), null).toLowerCase();
           const m=name_2.indexOf(".");
           const p=m===-1?[baseName, name_2]:[string(name_2, null, Some(m-1)), string(name_2, Some(m+1), null)];
@@ -686,22 +761,23 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
           if(instBaseName!=""&&!LoadedTemplates().ContainsKey(instBaseName))return failNotLoaded(instName);
           else {
             if(instBaseName==""&&prepareLocalTemplate!=null)prepareLocalTemplate.$0(instName);
+            else null;
             const d=LoadedTemplates().Item(instBaseName);
             if(!d.ContainsKey(instName))return failNotLoaded(instName);
             else {
               const t=d.Item(instName);
               const instance=t.cloneNode(true);
-              const usedHoles=new _c_13("New_3");
-              const mappings=new _c_11("New_5");
+              const usedHoles=new HashSet("New_3");
+              const mappings=new Dictionary("New_5");
               const attrs=_1.attributes;
-              for(let i=0, _4=attrs.length-1;i<=_4;i++){
+              for(let i=0, _6=attrs.length-1;i<=_6;i++){
                 const name_3=attrs.item(i).name.toLowerCase();
                 const m_1=attrs.item(i).nodeValue;
-                let _2=m_1==""?name_3:m_1.toLowerCase();
-                mappings.set_Item(name_3, _2);
+                let _4=m_1==""?name_3:m_1.toLowerCase();
+                mappings.set_Item(name_3, _4);
                 if(!usedHoles.SAdd(name_3))console.warn("Hole mapped twice", name_3);
               }
-              for(let i_1=0, _5=_1.childNodes.length-1;i_1<=_5;i_1++){
+              for(let i_1=0, _7=_1.childNodes.length-1;i_1<=_7;i_1++){
                 const n=_1.childNodes[i_1];
                 if(Equals(n.nodeType, Node.ELEMENT_NODE))if(!usedHoles.SAdd(n.nodeName.toLowerCase()))console.warn("Hole filled twice", instName);
               }
@@ -709,21 +785,24 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
               if(singleTextFill){
                 const x=fillTextHole(instance, _1.firstChild.textContent, instName);
                 const f=((usedHoles_1) =>(i_2) => usedHoles_1.SAdd(i_2))(usedHoles);
-                let _3=((a) =>(o) => {
+                let _5=((a) =>(o) => {
                   if(o!=null)a(o.$0);
                 })((x_1) => {
                   f(x_1);
                 });
-                _3(x);
+                _2=_5(x);
               }
+              else _2=null;
               removeHolesExcept(instance, usedHoles);
               if(!singleTextFill){
-                for(let i_2=0, _6=_1.childNodes.length-1;i_2<=_6;i_2++){
+                for(let i_2=0, _8=_1.childNodes.length-1;i_2<=_8;i_2++){
                   const n_1=_1.childNodes[i_2];
                   if(Equals(n_1.nodeType, Node.ELEMENT_NODE))if(n_1.hasAttributes())fillInstanceAttrs(instance, n_1);
                   else fillDocHole(instance, n_1);
                 }
+                _3=void 0;
               }
+              else _3=null;
               mapHoles(instance, mappings);
               fill(instance, _1.parentNode, _1);
               _1.parentNode.removeChild(_1);
@@ -736,12 +815,15 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
   function fillDocHole(instance, fillWith){
     const name_2=fillWith.nodeName.toLowerCase();
     const fillHole=(p, n) => {
+      let _1;
       if(name_2=="title"&&fillWith.hasChildNodes()){
         const parsed=ParseHTMLIntoFakeRoot(fillWith.textContent);
         fillWith.removeChild(fillWith.firstChild);
         while(parsed.hasChildNodes())
           fillWith.appendChild(parsed.firstChild);
+        _1=void 0;
       }
+      else _1=null;
       convertElement(fillWith);
       return fill(fillWith, p, n);
     };
@@ -750,7 +832,9 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
       for(let i=0, _2=holeAttrs.length-1;i<=_2;i++){
         const attrName=get(holeAttrs, i);
         let this_1=new RegExp("\\${"+name_2+"}", "ig");
-        let _1=e.getAttribute(attrName).replace(this_1, fillWith.textContent);
+        let str=e.getAttribute(attrName);
+        let newSubStr=fillWith.textContent;
+        let _1=str.replace(this_1, newSubStr);
         e.setAttribute(attrName, _1);
       }
     });
@@ -771,7 +855,10 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
       while(m.hasChildNodes())
         m.removeChild(m.lastChild);
       m.removeAttribute("ws-hole");
-      return fillHole(m, null);
+      return(((a) => {
+        const _1=a;
+        return(_2) => fillHole(_1, _2);
+      })(m))(null);
     }
   }
   function convertElement(el){
@@ -836,12 +923,12 @@ function PrepareTemplateStrict(baseName, name, fakeroot, prepareLocalTemplate){
   }
 }
 function InlineTemplate(el, fillWith){
-  let _1;
+  let _1, els, isDefaultSlotProcessed, _2;
   const holes=[];
   const updates=[];
   const attrs=[];
   const afterRender=[];
-  const fw=new _c_11("New_5");
+  const fw=new Dictionary("New_5");
   const e=Get(fillWith);
   try {
     while(e.MoveNext())
@@ -849,11 +936,13 @@ function InlineTemplate(el, fillWith){
         const x=e.Current;
         fw.set_Item(x.Name, x);
       }
+    _1=void 0;
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _3=e;
+    if(typeof _3=="object"&&isIDisposable(_3))e.Dispose();
   }
-  let els=ChildrenArray(el);
+  els=ChildrenArray(el);
   const addAttr=(el_1, attr) => {
     const attr_1=Insert(el_1, attr);
     updates.push(Updates(attr_1));
@@ -875,11 +964,11 @@ function InlineTemplate(el, fillWith){
     }}), o]);
     if(m[0]){
       const th=m[1];
-      if(th instanceof _c_34)return Some(th.Value);
-      else if(th instanceof _c_5)return Some(_c_10.TextNode(th.Value));
+      if(th instanceof Elt_1)return Some(th.Value);
+      else if(th instanceof Text)return Some(Doc.TextNode(th.Value));
       else {
         const o_1=th.ForTextView();
-        return o_1==null?null:Some(_c_10.TextView(o_1.$0));
+        return o_1==null?null:Some(Doc.TextView(o_1.$0));
       }
     }
     else return null;
@@ -893,11 +982,12 @@ function InlineTemplate(el, fillWith){
     if(m!=null&&m.$==1){
       const doc=m.$0;
       LinkElement(p, doc.docNode);
-      holes.push(_c_29.New(Empty(p), doc.docNode, null, p, Int(), null));
+      holes.push(DocElemNode.New(Empty(p), doc.docNode, null, p, Int(), null));
       updates.push(doc.updates);
     }
   });
   foreachNotPreserved(el, "[ws-replace]", (e_1) => {
+    let _8;
     const m=tryGetAsDoc(e_1.getAttribute("ws-replace"));
     if(m!=null&&m.$==1){
       const doc=m.$0;
@@ -907,13 +997,16 @@ function InlineTemplate(el, fillWith){
       const before=InsertBeforeDelim(after, doc.docNode);
       els=ChildrenArray(el);
       const o=tryFindIndex((y) => e_1===y, els);
-      if(o==null){ }
-      else set(els, o.$0, doc.docNode);
-      holes.push(_c_29.New(Empty(p), doc.docNode, Some([before, after]), p, Int(), null));
+      if(o==null)_8=void 0;
+      else {
+        const i=o.$0;
+        _8=set(els, i, doc.docNode);
+      }
+      holes.push(DocElemNode.New(Empty(p), doc.docNode, Some([before, after]), p, Int(), null));
       updates.push(doc.updates);
     }
   });
-  let isDefaultSlotProcessed=false;
+  isDefaultSlotProcessed=false;
   foreachNotPreserved(el, "slot", (p) => {
     const name=p.getAttribute("name");
     const name_1=name==""||name==null?"default":name.toLowerCase();
@@ -926,7 +1019,7 @@ function InlineTemplate(el, fillWith){
       if(m!=null&&m.$==1){
         const doc=m.$0;
         LinkElement(p, doc.docNode);
-        holes.push(_c_29.New(Empty(p), doc.docNode, null, p, Int(), null));
+        holes.push(DocElemNode.New(Empty(p), doc.docNode, null, p, Int(), null));
         updates.push(doc.updates);
       }
     }
@@ -940,12 +1033,12 @@ function InlineTemplate(el, fillWith){
     }}), o]);
     if(m[0]){
       const th=m[1];
-      if(th instanceof _c_35)addAttr(e_1, th.Value);
+      if(th instanceof Attribute)addAttr(e_1, th.Value);
       else console.warn("Attribute hole filled with non-attribute data", name);
     }
   });
   foreachNotPreserved(el, "[ws-on]", (e_1) => {
-    addAttr(e_1, _c_37.Concat(choose((x_1) => {
+    addAttr(e_1, Attr.Concat(choose((x_1) => {
       let o;
       const a=SplitChars(x_1, [":"], 1);
       const m=(o=null,[fw.TryGetValue(get(a, 1), {get:() => o, set:(v) => {
@@ -953,7 +1046,7 @@ function InlineTemplate(el, fillWith){
       }}), o]);
       if(m[0]){
         const th=m[1];
-        return th instanceof _c_36?Some(Handler(get(a, 0), th.Value)):th instanceof _c_8?Some(_c_37.Handler(get(a, 0), th.Value)):(console.warn("Event hole on"+get(a, 0)+" filled with non-event data", get(a, 1)),null);
+        return th instanceof Event?Some(Handler(get(a, 0), th.Value)):th instanceof EventQ?Some(Attr.HandlerImpl(get(a, 0), th.Value)):(console.warn("Event hole on"+get(a, 0)+" filled with non-event data", get(a, 1)),null);
       }
       else return null;
     }, SplitChars(e_1.getAttribute("ws-on"), [" "], 1))));
@@ -967,11 +1060,11 @@ function InlineTemplate(el, fillWith){
     }}), o]);
     if(m[0]){
       const th=m[1];
-      if(th instanceof _c_38){
+      if(th instanceof AfterRender_1){
         e_1.removeAttribute("ws-onafterrender");
         addAttr(e_1, OnAfterRender(th.Value));
       }
-      else if(th instanceof _c_39){
+      else if(th instanceof AfterRenderQ){
         e_1.removeAttribute("ws-onafterrender");
         addAttr(e_1, OnAfterRender(th.Value));
       }
@@ -985,26 +1078,24 @@ function InlineTemplate(el, fillWith){
     const m=(o=null,[fw.TryGetValue(name, {get:() => o, set:(v) => {
       o=v;
     }}), o]);
-    if(m[0])m[1].AddAttribute((_7) =>(_8) => addAttr(_7, _8), e_1);
+    if(m[0])m[1].AddAttribute((_8) =>(_9) => addAttr(_8, _9), e_1);
   });
   const wsdomHandling=() => {
     foreachNotPreservedwsDOM("[ws-dom]", (e_1) => {
-      let o;
-      let toWatch;
-      let r;
+      let o, toWatch, r;
       const m=(o=null,[fw.TryGetValue(e_1.getAttribute("ws-dom").toLowerCase(), {get:() => o, set:(v) => {
         o=v;
       }}), o]);
       if(m[0]){
         const th=m[1];
-        if(th instanceof _c_20){
+        if(th instanceof VarDomElement){
           const var_1=th.Value;
           e_1.removeAttribute("ws-dom");
           toWatch=e_1;
-          const mo=new MutationObserver((_7, mo_1) => {
+          const mo=new MutationObserver((_8, mo_1) => {
             iter_1((mr) => {
-              mr.removedNodes.forEach(CreateFuncWithArgs((_8) => _8[0]===toWatch&&mr.addedNodes.length!==1?(var_1.SetFinal(null),mo_1.disconnect()):null), null);
-            }, _7);
+              mr.removedNodes.forEach(CreateFuncWithArgs((_9) => _9[0]===toWatch&&mr.addedNodes.length!==1?(var_1.SetFinal(null),mo_1.disconnect()):null), null);
+            }, _8);
           });
           if(e_1.parentElement!==null)mo.observe(e_1.parentElement, (r={},r.childList=true,r));
           var_1.Set(Some(e_1));
@@ -1013,7 +1104,8 @@ function InlineTemplate(el, fillWith){
               const nel_1=nel.$0;
               if(toWatch===nel_1){ }
               else {
-                toWatch.replaceWith(nel_1);
+                let ps=[nel_1];
+                toWatch.replaceWith.apply(toWatch, ps);
                 toWatch=nel_1;
               }
             }
@@ -1030,12 +1122,12 @@ function InlineTemplate(el, fillWith){
     const re=new RegExp(TextHoleRE(), "g");
     const holeAttrs=SplitChars(e_1.getAttribute("ws-attr-holes"), [" "], 1);
     e_1.removeAttribute("ws-attr-holes");
-    for(let i=0, _7=holeAttrs.length-1;i<=_7;i++)((() => {
-      let _8;
+    for(let i=0, _8=holeAttrs.length-1;i<=_8;i++)((() => {
+      let m, lastIndex, _9;
       const attrName=get(holeAttrs, i);
       const s=e_1.getAttribute(attrName);
-      let m=null;
-      let lastIndex=0;
+      m=null;
+      lastIndex=0;
       const res=[];
       while(m=re.exec(s),m!==null)
         {
@@ -1045,7 +1137,7 @@ function InlineTemplate(el, fillWith){
         }
       const finalText=string(s, Some(lastIndex), null);
       re.lastIndex=0;
-      const value=foldBack((_9, _10) =>(((t) => {
+      const value=foldBack((_10, _11) =>(((t) => {
         const textBefore_1=t[0];
         const holeName=t[1];
         return(t_1) => {
@@ -1056,38 +1148,37 @@ function InlineTemplate(el, fillWith){
             o=v;
           }}), o]);
           const holeContent=m_1[0]?m_1[1].AsChoiceView:Choice1Of2("");
-          return holeContent.$==1?[textBefore_1, _c_40.Cons(textAfter==""?holeContent.$0:Map_1((s_5) => s_5+textAfter, holeContent.$0), views)]:[textBefore_1+holeContent.$0+textAfter, views];
+          return holeContent.$==1?[textBefore_1, FSharpList.Cons(textAfter==""?holeContent.$0:Map_1((s_5) => s_5+textAfter, holeContent.$0), views)]:[textBefore_1+holeContent.$0+textAfter, views];
         };
-      })(_9))(_10), res, [finalText, _c_40.Empty]);
+      })(_10))(_11), res, [finalText, FSharpList.Empty]);
       if(value[1].$==1){
         if(value[1].$1.$==1){
           if(value[1].$1.$1.$==1){
             if(value[1].$1.$1.$1.$==0){
               const s_1=value[0];
-              _8=Dynamic_1(attrName, Map3_1((_9, _10, _11) => s_1+_9+_10+_11, value[1].$0, value[1].$1.$0, value[1].$1.$1.$0));
+              _9=Dynamic_1(attrName, Map3_1((_10, _11, _12) => s_1+_10+_11+_12, value[1].$0, value[1].$1.$0, value[1].$1.$1.$0));
             }
             else {
               const s_2=value[0];
-              _8=Dynamic_1(attrName, Map_1((vs) => s_2+concat_2("", vs), Sequence_1(value[1])));
+              _9=Dynamic_1(attrName, Map_1((vs) => s_2+concat_2("", vs), Sequence_1(value[1])));
             }
           }
           else {
             const s_3=value[0];
-            _8=Dynamic_1(attrName, Map2_1((_9, _10) => s_3+_9+_10, value[1].$0, value[1].$1.$0));
+            _9=Dynamic_1(attrName, Map2_1((_10, _11) => s_3+_10+_11, value[1].$0, value[1].$1.$0));
           }
         }
-        else if(value[0]=="")_8=Dynamic_1(attrName, value[1].$0);
+        else if(value[0]=="")_9=Dynamic_1(attrName, value[1].$0);
         else {
           const s_4=value[0];
-          _8=Dynamic_1(attrName, Map_1((v) => s_4+v, value[1].$0));
+          _9=Dynamic_1(attrName, Map_1((v) => s_4+v, value[1].$0));
         }
       }
-      else _8=_c_37.Create(attrName, value[0]);
-      return addAttr(e_1, _8);
+      else _9=Attr.Create(attrName, value[0]);
+      return addAttr(e_1, _9);
     })());
   });
-  let _2=els;
-  const _3=afterRender.length==0?Some(() => {
+  const R=afterRender.length==0?Some(() => {
     wsdomHandling();
   }):Some((el_1) => {
     wsdomHandling();
@@ -1095,20 +1186,21 @@ function InlineTemplate(el, fillWith){
       f(el_1);
     }, afterRender);
   });
-  const _4=!Equals(els, null)&&els.length===1&&(get(els, 0)instanceof Node&&(get(els, 0)instanceof Element&&(_1=get(els, 0),true)))?Some(_1):null;
-  let _5={
-    Els:_2, 
+  let _4=els;
+  const _5=!Equals(els, null)&&els.length===1&&(get(els, 0)instanceof Node&&(get(els, 0)instanceof Element&&(_2=get(els, 0),true)))?Some(_2):null;
+  let _6={
+    Els:_4, 
     Dirty:true, 
     Holes:holes, 
     Attrs:attrs, 
-    Render:_3?_3.$0:void 0, 
-    El:_4?_4.$0:void 0
+    Render:R?R.$0:void 0, 
+    El:_5?_5.$0:void 0
   };
-  let _6=DeleteEmptyFields(_5, ["Render", "El"]);
-  return[_6, TreeReduce(Const(), Map2Unit_1, updates)];
+  let _7=DeleteEmptyFields(_6, ["Render", "El"]);
+  return[_7, TreeReduce(Const(), Map2Unit_1, updates)];
 }
 function GlobalHoles(){
-  return _c_28.GlobalHoles;
+  return _c_4.GlobalHoles;
 }
 function foreachNotPreserved(root, selector, f){
   IterSelector(root, selector, (p) => {
@@ -1127,25 +1219,22 @@ function foreachNotPreservedwsDOM(selector, f){
   });
 }
 function TextHoleRE(){
-  return _c_28.TextHoleRE;
+  return _c_4.TextHoleRE;
 }
-let _c_10=Lazy((_i) => class Doc extends _c {
-  static {
-    _c_10=_i(this);
-  }
+class Doc extends Object_1 {
   docNode;
   updates;
   static RunById(id, tr){
     const m=globalThis.document.getElementById(id);
     if(Equals(m, null))FailWith("invalid id: "+id);
-    else _c_10.Run(m, tr);
+    else Doc.Run(m, tr);
   }
   static Run(parent, doc){
     LinkElement(parent, doc.docNode);
-    _c_10.RunInPlace(false, parent, doc);
+    Doc.RunInPlace(false, parent, doc);
   }
   static get Empty(){
-    return _c_10.Mk(null, Const());
+    return Doc.Mk(null, Const());
   }
   static RunInPlace(childrenOnly, parent, doc){
     const st=CreateRunState(parent, doc.docNode);
@@ -1157,11 +1246,11 @@ let _c_10=Lazy((_i) => class Doc extends _c {
     return new Doc(node, updates);
   }
   static TextNode(v){
-    return _c_10.Mk(TextNodeDoc(globalThis.document.createTextNode(v)), Const());
+    return Doc.Mk(TextNodeDoc(globalThis.document.createTextNode(v)), Const());
   }
   static TextView(txt){
     const node=CreateTextNode();
-    return _c_10.Mk(TextDoc(node), Map_1((t) => {
+    return Doc.Mk(TextDoc(node), Map_1((t) => {
       UpdateTextNode(node, t);
     }, txt));
   }
@@ -1170,11 +1259,8 @@ let _c_10=Lazy((_i) => class Doc extends _c {
     this.docNode=docNode;
     this.updates=updates;
   }
-});
-let _c_11=Lazy((_i) => class Dictionary extends _c {
-  static {
-    _c_11=_i(this);
-  }
+}
+class Dictionary extends Object_1 {
   equals;
   hash;
   count;
@@ -1217,13 +1303,13 @@ let _c_11=Lazy((_i) => class Dictionary extends _c {
     return this.remove(k);
   }
   get Keys(){
-    return new _c_33(this);
+    return new KeyCollection(this);
   }
   GetEnumerator(){
     return Get0(concat_1(GetFieldValues(this.data)));
   }
   get Values(){
-    return new _c_42(this);
+    return new ValueCollection(this);
   }
   remove(k){
     const h=this.hash(k);
@@ -1243,12 +1329,6 @@ let _c_11=Lazy((_i) => class Dictionary extends _c {
       const a_1=KeyValue(a);
       return this.equals.apply(null, [a_1[0], k])?Some(a_1[1]):null;
     }, d);
-  }
-  static New_5(){
-    return new this("New_5");
-  }
-  static New_6(init_2, equals, hash){
-    return new this("New_6", init_2, equals, hash);
   }
   constructor(i, _1, _2, _3){
     if(i=="New_5"){
@@ -1275,17 +1355,18 @@ let _c_11=Lazy((_i) => class Dictionary extends _c {
           }
       }
       finally {
-        if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+        const _4=e;
+        if(typeof _4=="object"&&isIDisposable(_4))e.Dispose();
       }
     }
   }
-});
-let _c_12=Lazy((_i) => class Var extends _c {
+}
+let _c_1=Lazy((_i) => class Var_1 extends Object_1 {
   static {
-    _c_12=_i(this);
+    _c_1=_i(this);
   }
   static Create_1(v){
-    return new _c_23(false, {s:Ready(v, [])}, v);
+    return new ConcreteVar(false, {s:Ready(v, [])}, v);
   }
   static { }
 });
@@ -1304,10 +1385,7 @@ function Cc(Item){
 function New_1(IsCancellationRequested, Registrations){
   return{c:IsCancellationRequested, r:Registrations};
 }
-let _c_13=Lazy((_i) => class HashSet extends _c {
-  static {
-    _c_13=_i(this);
-  }
+class HashSet extends Object_1 {
   equals;
   hash;
   data;
@@ -1325,8 +1403,9 @@ let _c_13=Lazy((_i) => class HashSet extends _c {
     return arr==null?(this.data[h]=[item],this.count=this.count+1,true):this.arrContains(item, arr)?false:(arr.push(item),this.count=this.count+1,true);
   }
   arrContains(item, arr){
-    let c=true;
-    let i=0;
+    let c, i;
+    c=true;
+    i=0;
     const l=arr.length;
     while(c&&i<l)
       if(this.equals.apply(null, [arr[i], item]))c=false;
@@ -1343,14 +1422,15 @@ let _c_13=Lazy((_i) => class HashSet extends _c {
         this.Remove(e.Current);
     }
     finally {
-      if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+      const _1=e;
+      if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
     }
   }
   get Count(){
     return this.count;
   }
   IntersectWith(xs){
-    const other=new _c_13("New_4", xs, this.equals, this.hash);
+    const other=new HashSet("New_4", xs, this.equals, this.hash);
     const all=concat_3(this.data);
     for(let i=0, _1=all.length-1;i<=_1;i++){
       const item=all[i];
@@ -1366,8 +1446,9 @@ let _c_13=Lazy((_i) => class HashSet extends _c {
     for(let i=0, _1=all.length-1;i<=_1;i++)set(arr, i+index, all[i]);
   }
   arrRemove(item, arr){
-    let c=true;
-    let i=0;
+    let c, i;
+    c=true;
+    i=0;
     const l=arr.length;
     while(c&&i<l)
       if(this.equals.apply(null, [arr[i], item])){
@@ -1376,15 +1457,6 @@ let _c_13=Lazy((_i) => class HashSet extends _c {
       }
       else i=i+1;
     return!c;
-  }
-  static New_3(){
-    return new this("New_3");
-  }
-  static New_4(init_2, equals, hash){
-    return new this("New_4", init_2, equals, hash);
-  }
-  static New_2(init_2){
-    return new this("New_2", init_2);
   }
   constructor(i, _1, _2, _3){
     if(i=="New_3"){
@@ -1416,16 +1488,17 @@ let _c_13=Lazy((_i) => class HashSet extends _c {
           this.add(e.Current);
       }
       finally {
-        if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+        const _4=e;
+        if(typeof _4=="object"&&isIDisposable(_4))e.Dispose();
       }
     }
   }
-});
+}
 function append(s1, s2){
   return{GetEnumerator:() => {
     const e1=Get(s1);
     const first=[true];
-    return new _c_27(e1, null, (x) => {
+    return new T(e1, null, (x) => {
       if(x.s.MoveNext()){
         x.c=x.s.Current;
         return true;
@@ -1433,6 +1506,7 @@ function append(s1, s2){
       else {
         const x_1=x.s;
         if(!Equals(x_1, null))x_1.Dispose();
+        else null;
         x.s=null;
         return first[0]&&(first[0]=false,x.s=Get(s2),x.s.MoveNext()?(x.c=x.s.Current,true):(x.s.Dispose(),x.s=null,false));
       }
@@ -1448,11 +1522,13 @@ function head(s){
     return e.MoveNext()?e.Current:insufficient();
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _1=e;
+    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
 }
 function fold(f, x, s){
-  let r=x;
+  let r;
+  r=x;
   const e=Get(s);
   try {
     while(e.MoveNext())
@@ -1460,7 +1536,8 @@ function fold(f, x, s){
     return r;
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _1=e;
+    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
 }
 function iter(p, s){
@@ -1470,13 +1547,14 @@ function iter(p, s){
       p(e.Current);
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _1=e;
+    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
 }
 function map(f, s){
   return{GetEnumerator:() => {
     const en=Get(s);
-    return new _c_27(null, null, (e) => en.MoveNext()&&(e.c=f(en.Current),true), () => {
+    return new T(null, null, (e) => en.MoveNext()&&(e.c=f(en.Current),true), () => {
       en.Dispose();
     });
   }};
@@ -1490,8 +1568,10 @@ function collect(f, s){
 function max(s){
   const e=Get(s);
   try {
+    let m;
     if(!e.MoveNext())seqEmpty();
-    let m=e.Current;
+    else null;
+    m=e.Current;
     while(e.MoveNext())
       {
         const x=e.Current;
@@ -1500,7 +1580,8 @@ function max(s){
     return m;
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _1=e;
+    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
 }
 function concat(ss){
@@ -1531,10 +1612,11 @@ function concat(ss){
           }
         }
     }
-    return new _c_27(null, null, next, (st) => {
+    return new T(null, null, next, (st) => {
       const x=st.s;
       if(!Equals(x, null))x.Dispose();
-      if(!Equals(outerE, null))outerE.Dispose();
+      const x_1=outerE;
+      if(!Equals(x_1, null))x_1.Dispose();
     });
   }};
 }
@@ -1548,7 +1630,7 @@ function take(n, s){
   n<0?nonNegative():void 0;
   return{GetEnumerator:() => {
     const e=[Get(s)];
-    return new _c_27(0, null, (o) => {
+    return new T(0, null, (o) => {
       o.s=o.s+1;
       if(o.s>n)return false;
       else {
@@ -1562,7 +1644,7 @@ function take(n, s){
   }};
 }
 function initInfinite(f){
-  return{GetEnumerator:() => new _c_27(0, null, (e) => {
+  return{GetEnumerator:() => new T(0, null, (e) => {
     e.c=f(e.s);
     e.s=e.s+1;
     return true;
@@ -1574,13 +1656,15 @@ function forall(p, s){
 function exists(p, s){
   const e=Get(s);
   try {
-    let r=false;
+    let r;
+    r=false;
     while(!r&&e.MoveNext())
       r=p(e.Current);
     return r;
   }
   finally {
-    if(typeof e=="object"&&isIDisposable(e))e.Dispose();
+    const _1=e;
+    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
 }
 function choose(f, arr){
@@ -1593,8 +1677,9 @@ function choose(f, arr){
   return q;
 }
 function tryFindIndex(f, arr){
-  let res=null;
-  let i=0;
+  let res, i;
+  res=null;
+  i=0;
   while(i<arr.length&&res==null)
     {
       f(arr[i])?res=Some(i):void 0;
@@ -1603,8 +1688,9 @@ function tryFindIndex(f, arr){
   return res;
 }
 function tryPick(f, arr){
-  let res=null;
-  let i=0;
+  let res, i;
+  res=null;
+  i=0;
   while(i<arr.length&&res==null)
     {
       const m=f(arr[i]);
@@ -1614,9 +1700,11 @@ function tryPick(f, arr){
   return res;
 }
 function exists_1(f, x){
-  let e=false;
-  let i=0;
-  while(!e&&i<length(x))
+  let e, i;
+  e=false;
+  i=0;
+  const l=length(x);
+  while(!e&&i<l)
     if(f(x[i]))e=true;
     else i=i+1;
   return e;
@@ -1628,7 +1716,8 @@ function iter_1(f, arr){
   for(let i=0, _1=arr.length-1;i<=_1;i++)f(arr[i]);
 }
 function foldBack(f, arr, zero){
-  let acc=zero;
+  let acc;
+  acc=zero;
   const len=arr.length;
   for(let i=1, _1=len;i<=_1;i++)acc=f(arr[len-i], acc);
   return acc;
@@ -1645,7 +1734,7 @@ function filter(f, arr){
 }
 function ofSeq(xs){
   if(xs instanceof Array)return xs.slice();
-  else if(xs instanceof _c_40)return ofList(xs);
+  else if(xs instanceof FSharpList)return ofList(xs);
   else {
     const q=[];
     const o=Get(xs);
@@ -1655,7 +1744,8 @@ function ofSeq(xs){
       return q;
     }
     finally {
-      if(typeof o=="object"&&isIDisposable(o))o.Dispose();
+      const _1=o;
+      if(typeof _1=="object"&&isIDisposable(_1))o.Dispose();
     }
   }
 }
@@ -1664,8 +1754,9 @@ function pick(f, arr){
   return m==null?FailWith("KeyNotFoundException"):m.$0;
 }
 function ofList(xs){
+  let l;
   const q=[];
-  let l=xs;
+  l=xs;
   while(!(l.$==0))
     {
       q.push(head_1(l));
@@ -1674,9 +1765,11 @@ function ofList(xs){
   return q;
 }
 function forall_1(f, x){
-  let a=true;
-  let i=0;
-  while(a&&i<length(x))
+  let a, i;
+  a=true;
+  i=0;
+  const l=length(x);
+  while(a&&i<l)
     if(f(x[i]))i=i+1;
     else a=false;
   return a;
@@ -1693,9 +1786,9 @@ function init_1(size, f){
   for(let i=0, _1=size-1;i<=_1;i++)r[i]=f(i);
   return r;
 }
-let _c_14=Lazy((_i) => class TemplateInitializer extends _c {
+let _c_2=Lazy((_i) => class TemplateInitializer extends Object_1 {
   static {
-    _c_14=_i(this);
+    _c_2=_i(this);
   }
   static init;
   id;
@@ -1704,7 +1797,7 @@ let _c_14=Lazy((_i) => class TemplateInitializer extends _c {
   static instances;
   static GetOrAddHoleFor(id, holeName, initHole){
     let o;
-    const d=_c_14.GetHolesFor(id);
+    const d=_c_2.GetHolesFor(id);
     const m=(o=null,[d.TryGetValue(holeName, {get:() => o, set:(v) => {
       o=v;
     }}), o]);
@@ -1717,204 +1810,162 @@ let _c_14=Lazy((_i) => class TemplateInitializer extends _c {
   }
   static GetHolesFor(id){
     let o;
-    const m=(o=null,[_c_14.initialized.TryGetValue(id, {get:() => o, set:(v) => {
+    const m=(o=null,[_c_2.initialized.TryGetValue(id, {get:() => o, set:(v) => {
       o=v;
     }}), o]);
     if(m[0])return m[1];
     else {
-      const d=new _c_11("New_5");
-      _c_14.initialized.set_Item(id, d);
+      const d=new Dictionary("New_5");
+      _c_2.initialized.set_Item(id, d);
       return d;
     }
   }
   static {
-    _c_14.initialized=new _c_11("New_5");
-    _c_14.instances=new _c_11("New_5");
+    _c_2.initialized=new Dictionary("New_5");
+    _c_2.instances=new Dictionary("New_5");
   }
 });
-let _c_15=Lazy((_i) => {
-  Force(_c_3);
-  return class VarStr extends _c_3 {
-    static {
-      _c_15=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(this.fillWith.View);
-    }
-    AddAttribute(addAttr, el){
-      (addAttr(el))(Value(this.fillWith));
-    }
-    get AsChoiceView(){
-      return Choice2Of2(Map_1(String, this.fillWith.View));
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_16=Lazy((_i) => {
-  Force(_c_3);
-  return class VarFloatUnchecked extends _c_3 {
-    static {
-      _c_16=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(Map_1(String, this.fillWith.View));
-    }
-    AddAttribute(addAttr, el){
-      (addAttr(el))(FloatValueUnchecked(this.fillWith));
-    }
-    get AsChoiceView(){
-      return Choice2Of2(Map_1(String, this.fillWith.View));
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_17=Lazy((_i) => {
-  Force(_c_3);
-  return class VarBool extends _c_3 {
-    static {
-      _c_17=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(Map_1(String, this.fillWith.View));
-    }
-    AddAttribute(addAttr, el){
-      (addAttr(el))(Checked(this.fillWith));
-    }
-    get AsChoiceView(){
-      return Choice2Of2(Map_1(String, this.fillWith.View));
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_18=Lazy((_i) => {
-  Force(_c_3);
-  return class VarDateTime extends _c_3 {
-    static {
-      _c_18=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(Map_1((v) =>(new Date(v)).toLocaleString(), this.fillWith.View));
-    }
-    AddAttribute(addAttr, el){
-      (addAttr(el))(DateTimeValue(this.fillWith));
-    }
-    get AsChoiceView(){
-      return Choice2Of2(Map_1((v) =>(new Date(v)).toLocaleString(), this.fillWith.View));
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_19=Lazy((_i) => {
-  Force(_c_3);
-  return class VarFile extends _c_3 {
-    static {
-      _c_19=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(Map_1(String, this.fillWith.View));
-    }
-    AddAttribute(addAttr, el){
-      (addAttr(el))(FileValue(this.fillWith));
-    }
-    get AsChoiceView(){
-      return Choice2Of2(Map_1(String, this.fillWith.View));
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_20=Lazy((_i) => {
-  Force(_c_3);
-  return class VarDomElement extends _c_3 {
-    static {
-      _c_20=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    get Value(){
-      return this.fillWith;
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
-let _c_21=Lazy((_i) => {
-  Force(_c_3);
-  return class VarStrList extends _c_3 {
-    static {
-      _c_21=_i(this);
-    }
-    name;
-    fillWith;
-    get Name(){
-      return this.name;
-    }
-    ForTextView(){
-      return Some(Map_1((l) => concat_2(",", l), this.fillWith.View));
-    }
-    AddAttribute(addAttr, el){
-      (addAttr(el))(StringListValue(this.fillWith));
-    }
-    get AsChoiceView(){
-      return Choice2Of2(Map_1(String, this.fillWith.View));
-    }
-    constructor(name, fillWith){
-      super();
-      this.name=name;
-      this.fillWith=fillWith;
-    }
-  };
-});
+class VarStr extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(this.fillWith.View);
+  }
+  AddAttribute(addAttr, el){
+    (addAttr(el))(Value(this.fillWith));
+  }
+  get AsChoiceView(){
+    return Choice2Of2(Map_1(String, this.fillWith.View));
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class VarFloatUnchecked extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(Map_1(String, this.fillWith.View));
+  }
+  AddAttribute(addAttr, el){
+    (addAttr(el))(FloatValueUnchecked(this.fillWith));
+  }
+  get AsChoiceView(){
+    return Choice2Of2(Map_1(String, this.fillWith.View));
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class VarBool extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(Map_1(String, this.fillWith.View));
+  }
+  AddAttribute(addAttr, el){
+    (addAttr(el))(Checked(this.fillWith));
+  }
+  get AsChoiceView(){
+    return Choice2Of2(Map_1(String, this.fillWith.View));
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class VarDateTime extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(Map_1((v) =>(new Date(v)).toLocaleString(), this.fillWith.View));
+  }
+  AddAttribute(addAttr, el){
+    (addAttr(el))(DateTimeValue(this.fillWith));
+  }
+  get AsChoiceView(){
+    return Choice2Of2(Map_1((v) =>(new Date(v)).toLocaleString(), this.fillWith.View));
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class VarFile extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(Map_1(String, this.fillWith.View));
+  }
+  AddAttribute(addAttr, el){
+    (addAttr(el))(FileValue(this.fillWith));
+  }
+  get AsChoiceView(){
+    return Choice2Of2(Map_1(String, this.fillWith.View));
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class VarDomElement extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  get Value(){
+    return this.fillWith;
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
+class VarStrList extends TemplateHole {
+  name;
+  fillWith;
+  get Name(){
+    return this.name;
+  }
+  ForTextView(){
+    return Some(Map_1((l) => concat_2(",", l), this.fillWith.View));
+  }
+  AddAttribute(addAttr, el){
+    (addAttr(el))(StringListValue(this.fillWith));
+  }
+  get AsChoiceView(){
+    return Choice2Of2(Map_1(String, this.fillWith.View));
+  }
+  constructor(name, fillWith){
+    super();
+    this.name=name;
+    this.fillWith=fillWith;
+  }
+}
 function TreeDoc(Item){
   return{$:6, $0:Item};
 }
@@ -1924,70 +1975,70 @@ function TextNodeDoc(Item){
 function TextDoc(Item){
   return{$:4, $0:Item};
 }
-let _c_22=Lazy((_i) => class View {
-  static {
-    _c_22=_i(this);
-  }
-});
+class View { }
 function TryParse(s, r){
   return TryParse_2(s, -2147483648, 2147483647, r);
 }
-let _c_23=Lazy((_i) => {
-  Force(_c_4);
-  return class ConcreteVar extends _c_4 {
-    static {
-      _c_23=_i(this);
+class ConcreteVar extends Var {
+  isConst;
+  current;
+  snap;
+  view;
+  id;
+  get View(){
+    return this.view;
+  }
+  Set(v){
+    if(this.isConst)(((_1) => _1("WebSharper.UI: invalid attempt to change value of a Var after calling SetFinal"))((s) => {
+      console.log(s);
+    }));
+    else {
+      Obsolete(this.snap);
+      this.current=v;
+      this.snap={s:Ready(v, [])};
     }
-    isConst;
-    current;
-    snap;
-    view;
-    id;
-    get View(){
-      return this.view;
+  }
+  SetFinal(v){
+    if(this.isConst)(((_1) => _1("WebSharper.UI: invalid attempt to change value of a Var after calling SetFinal"))((s) => {
+      console.log(s);
+    }));
+    else {
+      Obsolete(this.snap);
+      this.isConst=true;
+      this.current=v;
+      this.snap={s:Forever(v)};
     }
-    Set(v){
-      if(this.isConst)(((_1) => _1("WebSharper.UI: invalid attempt to change value of a Var after calling SetFinal"))((s) => {
-        console.log(s);
-      }));
-      else {
-        Obsolete(this.snap);
-        this.current=v;
-        this.snap={s:Ready(v, [])};
-      }
-    }
-    SetFinal(v){
-      if(this.isConst)(((_1) => _1("WebSharper.UI: invalid attempt to change value of a Var after calling SetFinal"))((s) => {
-        console.log(s);
-      }));
-      else {
-        Obsolete(this.snap);
-        this.isConst=true;
-        this.current=v;
-        this.snap={s:Forever(v)};
-      }
-    }
-    Get(){
-      return this.current;
-    }
-    UpdateMaybe(f){
-      const m=f(this.Get());
-      if(m!=null&&m.$==1)this.Set(m.$0);
-    }
-    constructor(isConst, initSnap, initValue){
-      super();
-      this.isConst=isConst;
-      this.current=initValue;
-      this.snap=initSnap;
-      this.view=() => this.snap;
-      this.id=Int();
-    }
-  };
-});
+  }
+  Get(){
+    return this.current;
+  }
+  UpdateMaybe(f){
+    const m=f(this.Get());
+    if(m!=null&&m.$==1)this.Set(m.$0);
+  }
+  constructor(isConst, initSnap, initValue){
+    super();
+    this.isConst=isConst;
+    this.current=initValue;
+    this.snap=initSnap;
+    this.view=() => this.snap;
+    this.id=Int();
+  }
+}
 function WhenRun(snap, avail, obs){
   const m=snap.s;
   if(m==null)obs();
-  else m!=null&&m.$==2?(m.$1.push(obs),avail(m.$0)):m!=null&&m.$==3?(m.$0.push(avail),m.$1.push(obs)):avail(m.$0);
+  else if(m!=null&&m.$==2){
+    const v=m.$0;
+    m.$1.push(obs);
+    avail(v);
+  }
+  else if(m!=null&&m.$==3){
+    const q2=m.$1;
+    m.$0.push(avail);
+    q2.push(obs);
+  }
+  else avail(m.$0);
 }
 function Map(fn, sn){
   const m=sn.s;
@@ -2113,12 +2164,22 @@ function Copy(sn){
 function WhenObsoleteRun(snap, obs){
   const m=snap.s;
   if(m==null)obs();
-  else m!=null&&m.$==2?m.$1.push(obs):m!=null&&m.$==3?m.$1.push(obs):void 0;
+  else m!=null&&m.$==2?(m.$0,m.$1.push(obs)):m!=null&&m.$==3?(m.$0,m.$1.push(obs)):m.$0;
 }
 function When(snap, avail, obs){
   const m=snap.s;
   if(m==null)Obsolete(obs);
-  else m!=null&&m.$==2?(EnqueueSafe(m.$1, obs),avail(m.$0)):m!=null&&m.$==3?(m.$0.push(avail),EnqueueSafe(m.$1, obs)):avail(m.$0);
+  else if(m!=null&&m.$==2){
+    const v=m.$0;
+    EnqueueSafe(m.$1, obs);
+    avail(v);
+  }
+  else if(m!=null&&m.$==3){
+    const q2=m.$1;
+    m.$0.push(avail);
+    EnqueueSafe(q2, obs);
+  }
+  else avail(m.$0);
 }
 function MarkDone(res, sn, v){
   const _1=sn.s;
@@ -2150,18 +2211,19 @@ function ValueAndForever(snap){
 function MarkForever(sn, v){
   const m=sn.s;
   if(m!=null&&m.$==3){
+    const q=m.$0;
     sn.s=Forever(v);
-    const qa=m.$0;
-    for(let i=0, _1=length(qa)-1;i<=_1;i++)(get(qa, i))(v);
+    for(let i=0, _1=length(q)-1;i<=_1;i++)(get(q, i))(v);
   }
   else void 0;
 }
 function MarkReady(sn, v){
   const m=sn.s;
   if(m!=null&&m.$==3){
-    sn.s=Ready(v, m.$1);
-    const qa=m.$0;
-    for(let i=0, _1=length(qa)-1;i<=_1;i++)(get(qa, i))(v);
+    const q2=m.$1;
+    const q1=m.$0;
+    sn.s=Ready(v, q2);
+    for(let i=0, _1=length(q1)-1;i<=_1;i++)(get(q1, i))(v);
   }
   else void 0;
 }
@@ -2174,7 +2236,7 @@ function Map2Opt2(fn, y, sn1){
 function WhenObsolete(snap, obs){
   const m=snap.s;
   if(m==null)Obsolete(obs);
-  else m!=null&&m.$==2?EnqueueSafe(m.$1, obs):m!=null&&m.$==3?EnqueueSafe(m.$1, obs):void 0;
+  else m!=null&&m.$==2?(m.$0,EnqueueSafe(m.$1, obs)):m!=null&&m.$==3?(m.$0,EnqueueSafe(m.$1, obs)):m.$0;
 }
 function EnqueueSafe(q, x){
   q.push(x);
@@ -2193,10 +2255,7 @@ function EnqueueSafe(q, x){
   }
   else void 0;
 }
-let _c_24=Lazy((_i) => class Scheduler extends _c {
-  static {
-    _c_24=_i(this);
-  }
+class Scheduler extends Object_1 {
   idle;
   robin;
   Fork(action){
@@ -2206,8 +2265,9 @@ let _c_24=Lazy((_i) => class Scheduler extends _c {
     }, 0)):void 0;
   }
   tick(){
+    let loop;
     const t=Date.now();
-    let loop=true;
+    loop=true;
     while(loop)
       if(this.robin.length===0){
         this.idle=true;
@@ -2225,23 +2285,17 @@ let _c_24=Lazy((_i) => class Scheduler extends _c {
     this.idle=true;
     this.robin=[];
   }
-});
-let _c_25=Lazy((_i) => {
-  Force(Error);
-  return class NonStandardPromiseRejectionException extends Error {
-    static {
-      _c_25=_i(this);
-    }
-    reason;
-    constructor(reason){
-      super("Promise rejected");
-      this.reason=reason;
-    }
-  };
-});
-let _c_26=Lazy((_i) => class $StartupCode_Concurrency {
+}
+class NonStandardPromiseRejectionException extends Error {
+  reason;
+  constructor(reason){
+    super("Promise rejected");
+    this.reason=reason;
+  }
+}
+let _c_3=Lazy((_i) => class $StartupCode_Concurrency {
   static {
-    _c_26=_i(this);
+    _c_3=_i(this);
   }
   static GetCT;
   static Zero;
@@ -2250,8 +2304,8 @@ let _c_26=Lazy((_i) => class $StartupCode_Concurrency {
   static noneCT;
   static {
     this.noneCT=New_1(false, []);
-    this.scheduler=new _c_24();
-    this.defCTS=[new _c_31()];
+    this.scheduler=new Scheduler();
+    this.defCTS=[new CancellationTokenSource()];
     this.Zero=Return();
     this.GetCT=(c) => {
       c.k(Ok(c.ct));
@@ -2259,19 +2313,19 @@ let _c_26=Lazy((_i) => class $StartupCode_Concurrency {
   }
 });
 function notPresent(){
-  throw new _c_48("New");
+  throw new KeyNotFoundException("New");
 }
 function Get(x){
   return x instanceof Array?ArrayEnumerator(x):Equals(typeof x, "string")?StringEnumerator(x):x.GetEnumerator();
 }
 function ArrayEnumerator(s){
-  return new _c_27(0, null, (e) => {
+  return new T(0, null, (e) => {
     const i=e.s;
     return i<length(s)&&(e.c=get(s, i),e.s=i+1,true);
   }, void 0);
 }
 function StringEnumerator(s){
-  return new _c_27(0, null, (e) => {
+  return new T(0, null, (e) => {
     const i=e.s;
     return i<s.length&&(e.c=s[i],e.s=i+1,true);
   }, void 0);
@@ -2279,10 +2333,7 @@ function StringEnumerator(s){
 function Get0(x){
   return x instanceof Array?ArrayEnumerator(x):Equals(typeof x, "string")?StringEnumerator(x):"GetEnumerator0"in x?x.GetEnumerator0():x.GetEnumerator();
 }
-let _c_27=Lazy((_i) => class T extends _c {
-  static {
-    _c_27=_i(this);
-  }
+class T extends Object_1 {
   s;
   c;
   n;
@@ -2307,10 +2358,10 @@ let _c_27=Lazy((_i) => class T extends _c {
     this.d=d;
     this.e=0;
   }
-});
-let _c_28=Lazy((_i) => class $StartupCode_Templates {
+}
+let _c_4=Lazy((_i) => class $StartupCode_Templates {
   static {
-    _c_28=_i(this);
+    _c_4=_i(this);
   }
   static RenderedFullDocTemplate;
   static TextHoleRE;
@@ -2318,9 +2369,9 @@ let _c_28=Lazy((_i) => class $StartupCode_Templates {
   static LocalTemplatesLoaded;
   static LoadedTemplates;
   static {
-    this.LoadedTemplates=new _c_11("New_5");
+    this.LoadedTemplates=new Dictionary("New_5");
     this.LocalTemplatesLoaded=false;
-    this.GlobalHoles=new _c_11("New_5");
+    this.GlobalHoles=new Dictionary("New_5");
     this.TextHoleRE="\\${([^}]+)}";
     this.RenderedFullDocTemplate=null;
   }
@@ -2331,15 +2382,24 @@ function LinkElement(el, children){
 function InsertDoc(parent, doc, pos){
   while(true)
     {
-      if(doc!=null&&doc.$==1)return InsertNode(parent, doc.$0.El, pos);
+      if(doc!=null&&doc.$==1){
+        const e=doc.$0;
+        return InsertNode(parent, e.El, pos);
+      }
       else if(doc!=null&&doc.$==2){
         const d=doc.$0;
         d.Dirty=false;
         doc=d.Current;
       }
       else if(doc==null)return pos;
-      else if(doc!=null&&doc.$==4)return InsertNode(parent, doc.$0.Text, pos);
-      else if(doc!=null&&doc.$==5)return InsertNode(parent, doc.$0, pos);
+      else if(doc!=null&&doc.$==4){
+        const t=doc.$0;
+        return InsertNode(parent, t.Text, pos);
+      }
+      else if(doc!=null&&doc.$==5){
+        const t_1=doc.$0;
+        return InsertNode(parent, t_1, pos);
+      }
       else if(doc!=null&&doc.$==6)return foldBack((_1, _2) =>((((parent_1) =>(el) =>(pos_1) => el==null||el.constructor===Object?InsertDoc(parent_1, el, pos_1):InsertNode(parent_1, el, pos_1))(parent))(_1))(_2), doc.$0.Els, pos);
       else {
         const b=doc.$1;
@@ -2354,16 +2414,26 @@ function CreateRunState(parent, doc){
 }
 function PerformAnimatedUpdate(childrenOnly, st, doc){
   if(get_UseAnimations()){
-    const _1=null;
-    return Delay(() => {
+    const f=() => {
       const cur=FindAll(doc);
       const change=ComputeChangeAnim(st, cur);
       const enter=ComputeEnterAnim(st, cur);
-      return Bind(Play(Append(change, ComputeExitAnim(st, cur))), () => Bind(SyncElemNodesNextFrame(childrenOnly, st), () => Bind(Play(enter), () => {
-        st.PreviousNodes=cur;
-        return Return(null);
-      })));
-    });
+      const x=Play(Append(change, ComputeExitAnim(st, cur)));
+      const f_1=() => {
+        const x_1=SyncElemNodesNextFrame(childrenOnly, st);
+        const f_2=() => {
+          const x_2=Play(enter);
+          const f_3=() => {
+            st.PreviousNodes=cur;
+            return Return(null);
+          };
+          return Bind(x_2, (_1, _2) =>(f_3(_1))(_2));
+        };
+        return Bind(x_1, (_1, _2) =>(f_2(_1))(_2));
+      };
+      return Bind(x, (_1, _2) =>(f_1(_1))(_2));
+    };
+    return Delay((_1, _2) =>(f(_1))(_2));
   }
   else return SyncElemNodesNextFrame(childrenOnly, st);
 }
@@ -2386,7 +2456,7 @@ function InsertNode(parent, node, pos){
 function CreateElemNode(el, attr, children){
   LinkElement(el, children);
   const attr_1=Insert(el, attr);
-  return _c_29.New(attr_1, children, null, el, Int(), GetOptional(attr_1.OnAfterRender));
+  return DocElemNode.New(attr_1, children, null, el, Int(), GetOptional(attr_1.OnAfterRender));
 }
 function SyncElemNodesNextFrame(childrenOnly, st){
   if(BatchUpdatesEnabled()){
@@ -2501,7 +2571,8 @@ function AfterRender(el){
   }
 }
 function DoSyncElement(el){
-  const parent=el.El;
+  const m=GetOptional(el.Delimiters);
+  const parent=m==null?el.El:m.$0[1].parentNode;
   function ins(doc, pos){
     while(true)
       {
@@ -2520,7 +2591,7 @@ function DoSyncElement(el){
         else if(doc!=null&&doc.$==6){
           const t=doc.$0;
           if(t.Dirty)t.Dirty=false;
-          return foldBack((_2, _3) => _2==null||_2.constructor===Object?ins(_2, _3):_2, t.Els, pos);
+          return foldBack((_3, _4) => _3==null||_3.constructor===Object?ins(_3, _4):_3, t.Els, pos);
         }
         else {
           const b=doc.$1;
@@ -2530,18 +2601,15 @@ function DoSyncElement(el){
         }
       }
   }
-  const p=el.El;
   Iter((e) => {
-    RemoveNode(p, e);
-  }, Except_2(DocChildren(el), Children(el.El, GetOptional(el.Delimiters))));
+    RemoveNode(parent, e);
+  }, Except_2(DocChildren(el), Children(parent, GetOptional(el.Delimiters))));
   let _1=el.Children;
-  const m=GetOptional(el.Delimiters);
-  ins(_1, m!=null&&m.$==1?m.$0[1]:null);
+  const m_1=GetOptional(el.Delimiters);
+  let _2=m_1!=null&&m_1.$==1?m_1.$0[1]:null;
+  ins(_1, _2);
 }
-let _c_29=Lazy((_i) => class DocElemNode {
-  static {
-    _c_29=_i(this);
-  }
+class DocElemNode {
   Attr;
   Children;
   Delimiters;
@@ -2554,26 +2622,26 @@ let _c_29=Lazy((_i) => class DocElemNode {
   GetHashCode(){
     return this.ElKey;
   }
-  static New(Attr, Children_1, Delimiters, El, ElKey, Render){
+  static New(Attr_1, Children_1, Delimiters, El, ElKey, Render){
     const _1={
-      Attr:Attr, 
+      Attr:Attr_1, 
       Children:Children_1, 
       El:El, 
       ElKey:ElKey
     };
     let _2=(SetOptional(_1, "Delimiters", Delimiters),SetOptional(_1, "Render", Render),_1);
-    return Create_1(_c_29, _2);
+    return Create_1(DocElemNode, _2);
   }
-});
+}
 function Int(){
   set_counter(counter()+1);
   return counter();
 }
 function set_counter(_1){
-  _c_44.counter=_1;
+  _c_6.counter=_1;
 }
 function counter(){
-  return _c_44.counter;
+  return _c_6.counter;
 }
 function Ready(Item1, Item2){
   return{
@@ -2592,43 +2660,28 @@ function Waiting(Item1, Item2){
     $1:Item2
   };
 }
-let _c_30=Lazy((_i) => {
-  Force(Error);
-  return class OperationCanceledException extends Error {
-    static {
-      _c_30=_i(this);
+class OperationCanceledException extends Error {
+  ct;
+  constructor(i, _1, _2, _3){
+    let ct;
+    if(i=="New"){
+      ct=_1;
+      i="New_1";
+      _1="The operation was canceled.";
+      _2=null;
+      _3=ct;
     }
-    ct;
-    static New(ct){
-      return new this("New", ct);
+    if(i=="New_1"){
+      const message=_1;
+      const inner=_2;
+      const ct_1=_3;
+      super(message);
+      this.inner=inner;
+      this.ct=ct_1;
     }
-    static New_1(message, inner, ct){
-      return new this("New_1", message, inner, ct);
-    }
-    constructor(i, _1, _2, _3){
-      let ct;
-      if(i=="New"){
-        ct=_1;
-        i="New_1";
-        _1="The operation was canceled.";
-        _2=null;
-        _3=ct;
-      }
-      if(i=="New_1"){
-        const message=_1;
-        const inner=_2;
-        const ct_1=_3;
-        super(message);
-        this.inner=inner;
-        this.ct=ct_1;
-      }
-    }
-  };
-});
-let _c_31=Lazy((_i) => class CancellationTokenSource extends _c {
-  static {
-    _c_31=_i(this);
   }
+}
+class CancellationTokenSource extends Object_1 {
   init;
   c;
   pending;
@@ -2640,33 +2693,28 @@ let _c_31=Lazy((_i) => class CancellationTokenSource extends _c {
     this.r=[];
     this.init=1;
   }
-});
-let _c_32=Lazy((_i) => {
-  Force(_c_10);
-  return class Elt extends _c_10 {
-    static {
-      _c_32=_i(this);
-    }
-    docNode_1;
-    updates_1;
-    elt;
-    rvUpdates;
-    static TreeNode(tree, updates){
-      const rvUpdates=_c_41.Create(updates);
-      const x=map_1((_3) => Updates(_3[1]), tree.Attrs);
-      let _1=TreeReduce(Const(), Map2Unit_1, x);
-      let _2=Map2Unit_1(_1, rvUpdates.v);
-      return new Elt(TreeDoc(tree), _2, get(tree.Els, 0), rvUpdates);
-    }
-    constructor(docNode, updates, elt, rvUpdates){
-      super(docNode, updates);
-      this.docNode_1=docNode;
-      this.updates_1=updates;
-      this.elt=elt;
-      this.rvUpdates=rvUpdates;
-    }
-  };
-});
+}
+class Elt extends Doc {
+  docNode_1;
+  updates_1;
+  elt;
+  rvUpdates;
+  static TreeNode(tree, updates){
+    const rvUpdates=Updates_1.Create(updates);
+    let _1=TreeDoc(tree);
+    const x=map_1((_4) => Updates(_4[1]), tree.Attrs);
+    let _2=TreeReduce(Const(), Map2Unit_1, x);
+    let _3=Map2Unit_1(_2, rvUpdates.v);
+    return new Elt(_1, _3, get(tree.Els, 0), rvUpdates);
+  }
+  constructor(docNode, updates, elt, rvUpdates){
+    super(docNode, updates);
+    this.docNode_1=docNode;
+    this.updates_1=updates;
+    this.elt=elt;
+    this.rvUpdates=rvUpdates;
+  }
+}
 function Const(x){
   const o={s:Forever(x)};
   return() => o;
@@ -2697,7 +2745,8 @@ function Map2Unit_1(a, a_1){
 function CreateLazy(observe){
   const lv={c:null, o:observe};
   return() => {
-    let c=lv.c;
+    let c;
+    c=lv.c;
     if(c===null){
       c=lv.o();
       lv.c=c;
@@ -2712,8 +2761,9 @@ function CreateLazy(observe){
   };
 }
 function convertTextNode(n){
-  let m=null;
-  let li=0;
+  let m, li;
+  m=null;
+  li=0;
   const s=n.textContent;
   const strRE=new RegExp(TextHoleRE(), "g");
   while(m=strRE.exec(s),m!==null)
@@ -2761,7 +2811,9 @@ function removeHolesExcept(instance, dontRemove){
     for(let i=0, _2=holeAttrs.length-1;i<=_2;i++){
       const attrName=get(holeAttrs, i);
       let this_1=new RegExp(TextHoleRE(), "g");
-      let _1=e.getAttribute(attrName).replace(this_1, (_3, _4) => dontRemove.Contains(_4)?_3:"");
+      let str=e.getAttribute(attrName);
+      let replaceFn=(_3, _4) => dontRemove.Contains(_4)?_3:"";
+      let _1=str.replace(this_1, replaceFn);
       e.setAttribute(attrName, _1);
     }
   });
@@ -2836,7 +2888,9 @@ function convertAttrs(el){
     }
     else if(!StartsWith(a.nodeName, "ws-")&&(new RegExp(TextHoleRE())).test(a.nodeValue)){
       let this_1=new RegExp(TextHoleRE(), "g");
-      let _1=a.nodeValue.replace(this_1, (_3, _4) =>"${"+_4.toLowerCase()+"}");
+      let str=a.nodeValue;
+      let replaceFn=(_3, _4) =>"${"+_4.toLowerCase()+"}";
+      let _1=str.replace(this_1, replaceFn);
       a.nodeValue=_1;
       holedAttrs.push(a.nodeName);
     }
@@ -2869,7 +2923,8 @@ function string(source, start, finish){
   else if(finish==null)return source.slice(start.$0);
   else {
     const f_1=finish.$0;
-    return f_1<0?"":source.slice(start.$0, f_1+1);
+    const s=start.$0;
+    return f_1<0?"":source.slice(s, f_1+1);
   }
 }
 function ParseHTMLIntoFakeRoot(elem){
@@ -2895,7 +2950,10 @@ function ParseHTMLIntoFakeRoot(elem){
           }
         }
     }
-    return unwrap(root, p[0]);
+    return(((a) => {
+      const _1=a;
+      return(_2) => unwrap(_1, _2);
+    })(root))(p[0]);
   }
 }
 function ChildrenArray(element){
@@ -2904,19 +2962,19 @@ function ChildrenArray(element){
   return a;
 }
 function rhtml(){
-  return _c_45.rhtml;
+  return _c_7.rhtml;
 }
 function wrapMap(){
-  return _c_45.wrapMap;
+  return _c_7.wrapMap;
 }
 function defaultWrap(){
-  return _c_45.defaultWrap;
+  return _c_7.defaultWrap;
 }
 function rxhtmlTag(){
-  return _c_45.rxhtmlTag;
+  return _c_7.rxhtmlTag;
 }
 function rtagName(){
-  return _c_45.rtagName;
+  return _c_7.rtagName;
 }
 function IterSelector(el, selector, f){
   const l=el.querySelectorAll(selector);
@@ -2943,9 +3001,11 @@ function insufficient(){
   return FailWith("The input sequence has an insufficient number of elements.");
 }
 function arrContains(item, arr){
-  let c=true;
-  let i=0;
-  while(c&&i<length(arr))
+  let c, i;
+  c=true;
+  i=0;
+  const l=length(arr);
+  while(c&&i<l)
     if(Equals(arr[i], item))c=false;
     else i=i+1;
   return!c;
@@ -2953,10 +3013,7 @@ function arrContains(item, arr){
 function nonNegative(){
   return FailWith("The input must be non-negative.");
 }
-let _c_33=Lazy((_i) => class KeyCollection extends _c {
-  static {
-    _c_33=_i(this);
-  }
+class KeyCollection extends Object_1 {
   d;
   GetEnumerator(){
     return Get(map((kvp) => kvp.K, this.d));
@@ -2965,16 +3022,20 @@ let _c_33=Lazy((_i) => class KeyCollection extends _c {
     super();
     this.d=d;
   }
-});
+}
 function get_UseAnimations(){
   return UseAnimations();
 }
 function Play(anim){
-  const _1=null;
-  return Delay(() => Bind(Run(() => { }, Actions(anim)), () => {
-    Finalize(anim);
-    return Return(null);
-  }));
+  const f=() => {
+    const x=Run(() => { }, Actions(anim));
+    const f_1=() => {
+      Finalize(anim);
+      return Return(null);
+    };
+    return Bind(x, (_1, _2) =>(f_1(_1))(_2));
+  };
+  return Delay((_1, _2) =>(f(_1))(_2));
 }
 function Append(a, a_1){
   return Anim(Append_1(a.$0, a_1.$0));
@@ -3011,16 +3072,19 @@ function get_Empty(){
   return Anim(Empty_1());
 }
 function BatchUpdatesEnabled(){
-  return _c_43.BatchUpdatesEnabled;
+  return _c_5.BatchUpdatesEnabled;
 }
 function StartProcessor(procAsync){
   const st=[0];
   function work(){
-    const _1=null;
-    return Delay(() => Bind(procAsync, () => {
-      const m=st[0];
-      return Equals(m, 1)?(st[0]=0,Zero()):Equals(m, 2)?(st[0]=1,work()):Zero();
-    }));
+    const f=() => {
+      const f_1=() => {
+        const m=st[0];
+        return Equals(m, 1)?(st[0]=0,Zero()):Equals(m, 2)?(st[0]=1,work()):Zero();
+      };
+      return Bind(procAsync, (_1, _2) =>(f_1(_1))(_2));
+    };
+    return Delay((_1, _2) =>(f(_1))(_2));
   }
   return() => {
     const m=st[0];
@@ -3092,14 +3156,11 @@ function Empty(e){
 function Flags(a){
   return a!==null&&a.hasOwnProperty("flags")?a.flags:0;
 }
-function Static(attr){
-  return _c_37.A3(attr);
-}
 function Dynamic(view, set_1){
-  return _c_37.A1(new _c_47(view, set_1));
+  return Attr.A1(new DynamicAttrNode(view, set_1));
 }
 function EmptyAttr(){
-  return _c_49.EmptyAttr;
+  return _c_9.EmptyAttr;
 }
 function HasExitAnim(attr){
   const flag=2;
@@ -3126,7 +3187,7 @@ function AppendTree(a, b){
   if(a===null)return b;
   else if(b===null)return a;
   else {
-    const x=_c_37.A2(a, b);
+    const x=Attr.A2(a, b);
     SetFlags(x, Flags(a)|Flags(b));
     return x;
   }
@@ -3142,61 +3203,43 @@ function Sync_1(elem, dyn){
 function SetFlags(a, f){
   a.flags=f;
 }
-let _c_34=Lazy((_i) => {
-  Force(_c_3);
-  return class Elt extends _c_3 {
-    static {
-      _c_34=_i(this);
-    }
-    name;
-    fillWith;
-    get Value(){
-      return this.fillWith;
-    }
-    get Name(){
-      return this.name;
-    }
-  };
-});
-let _c_35=Lazy((_i) => {
-  Force(_c_3);
-  return class Attribute extends _c_3 {
-    static {
-      _c_35=_i(this);
-    }
-    name;
-    fillWith;
-    get Value(){
-      return this.fillWith;
-    }
-    get Name(){
-      return this.name;
-    }
-  };
-});
-let _c_36=Lazy((_i) => {
-  Force(_c_3);
-  return class Event extends _c_3 {
-    static {
-      _c_36=_i(this);
-    }
-    name;
-    fillWith;
-    get Value(){
-      return this.fillWith;
-    }
-    get Name(){
-      return this.name;
-    }
-  };
-});
+class Elt_1 extends TemplateHole {
+  name;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
+class Attribute extends TemplateHole {
+  name;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
+class Event extends TemplateHole {
+  name;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
 function Handler(name, callback){
-  return Static((el) => {
+  return Attr.A3((el) => {
     el.addEventListener(name, (d) =>(callback(el))(d), false);
   });
 }
 function OnAfterRender(callback){
-  return _c_37.A4(callback);
+  return Attr.A4(callback);
 }
 function Dynamic_1(name, view){
   return Dynamic(view, (el) =>(v) => el.setAttribute(name, v));
@@ -3221,34 +3264,25 @@ function StringListValue(var_1){
 }
 function ValueWith(bind, var_1){
   const p=bind(var_1);
-  return _c_37.Append(Static(p[0]), DynamicCustom(p[1], p[2]));
+  return AppendTree(Attr.A3(p[0]), DynamicCustom(p[1], p[2]));
 }
 function DynamicCustom(set_1, view){
   return Dynamic(view, set_1);
 }
-let _c_37=Lazy((_i) => class Attr {
-  static {
-    _c_37=_i(this);
-  }
-  static Handler(event, q){
-    return _c_37.HandlerImpl(event, q);
-  }
-  static Concat(xs){
-    const x=ofSeqNonCopying(xs);
-    return TreeReduce(EmptyAttr(), _c_37.Append, x);
-  }
-  static Create(name, value){
-    return Static((el) => {
-      el.setAttribute(name, value);
-    });
-  }
+class Attr {
   static HandlerImpl(event, q){
-    return Static((el) => {
+    return Attr.A3((el) => {
       el.addEventListener(event, (d) =>(q(el))(d), false);
     });
   }
-  static Append(a, b){
-    return AppendTree(a, b);
+  static Concat(xs){
+    const x=ofSeqNonCopying(xs);
+    return TreeReduce(EmptyAttr(), (_1, _2) => AppendTree(_1, _2), x);
+  }
+  static Create(name, value){
+    return Attr.A3((el) => {
+      el.setAttribute(name, value);
+    });
   }
   static A4(onAfterRender){
     return Create_1(Attr, {$:4, $0:onAfterRender});
@@ -3266,49 +3300,38 @@ let _c_37=Lazy((_i) => class Attr {
       $1:Item2
     });
   }
-});
-let _c_38=Lazy((_i) => {
-  Force(_c_3);
-  return class AfterRender_1 extends _c_3 {
-    static {
-      _c_38=_i(this);
-    }
-    name;
-    fillWith;
-    get Value(){
-      return this.fillWith;
-    }
-    get Name(){
-      return this.name;
-    }
-  };
-});
-let _c_39=Lazy((_i) => {
-  Force(_c_3);
-  return class AfterRenderQ extends _c_3 {
-    static {
-      _c_39=_i(this);
-    }
-    name;
-    fillWith;
-    get Value(){
-      return this.fillWith;
-    }
-    get Name(){
-      return this.name;
-    }
-  };
-});
+  $;
+  $0;
+  $1;
+}
+class AfterRender_1 extends TemplateHole {
+  name;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
+class AfterRenderQ extends TemplateHole {
+  name;
+  key;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
 function Choice1Of2(Item){
   return{$:0, $0:Item};
 }
 function Choice2Of2(Item){
   return{$:1, $0:Item};
 }
-let _c_40=Lazy((_i) => class FSharpList {
-  static {
-    _c_40=_i(this);
-  }
+class FSharpList {
   static Cons(Head, Tail){
     return Create_1(FSharpList, {
       $:1, 
@@ -3316,14 +3339,23 @@ let _c_40=Lazy((_i) => class FSharpList {
       $1:Tail
     });
   }
-  static Empty=Create_1(_c_40, {$:0});
+  static Empty=Create_1(FSharpList, {$:0});
   GetEnumerator(){
-    return new _c_27(this, null, (e) => {
+    return new T(this, null, (e) => {
       const m=e.s;
-      return m.$==0?false:(e.c=m.$0,e.s=m.$1,true);
+      if(m.$==0)return false;
+      else {
+        const xs=m.$1;
+        e.c=m.$0;
+        e.s=xs;
+        return true;
+      }
     }, void 0);
   }
-});
+  $;
+  $0;
+  $1;
+}
 function concat_2(separator, strings){
   return ofSeq(strings).join(separator);
 }
@@ -3386,7 +3418,7 @@ function MapTreeReduce(mapping, defaultValue, reduction, array){
 }
 function ofSeqNonCopying(xs){
   if(xs instanceof Array)return xs;
-  else if(xs instanceof _c_40)return ofList(xs);
+  else if(xs instanceof FSharpList)return ofList(xs);
   else if(xs===null)return[];
   else {
     const q=[];
@@ -3397,21 +3429,19 @@ function ofSeqNonCopying(xs){
       return q;
     }
     finally {
-      if(typeof o=="object"&&isIDisposable(o))o.Dispose();
+      const _1=o;
+      if(typeof _1=="object"&&isIDisposable(_1))o.Dispose();
     }
   }
 }
-let _c_41=Lazy((_i) => class Updates_1 {
-  static {
-    _c_41=_i(this);
-  }
+class Updates_1 {
   c;
   s;
   v;
   static Create(v){
     let var_1;
     var_1=null;
-    var_1=_c_41.New(v, null, () => {
+    var_1=Updates_1.New(v, null, () => {
       let c;
       c=var_1.s;
       return c===null?(c=Copy(var_1.c()),var_1.s=c,WhenObsoleteRun(c, () => {
@@ -3421,17 +3451,14 @@ let _c_41=Lazy((_i) => class Updates_1 {
     return var_1;
   }
   static New(Current, Snap, VarView){
-    return Create_1(_c_41, {
+    return Create_1(Updates_1, {
       c:Current, 
       s:Snap, 
       v:VarView
     });
   }
-});
-let _c_42=Lazy((_i) => class ValueCollection extends _c {
-  static {
-    _c_42=_i(this);
-  }
+}
+class ValueCollection extends Object_1 {
   d;
   GetEnumerator(){
     return Get(map((kvp) => kvp.V, this.d));
@@ -3440,12 +3467,12 @@ let _c_42=Lazy((_i) => class ValueCollection extends _c {
     super();
     this.d=d;
   }
-});
+}
 function New_3(PreviousNodes, Top){
   return{PreviousNodes:PreviousNodes, Top:Top};
 }
 function get_Empty_1(){
-  return NodeSet(new _c_13("New_3"));
+  return NodeSet(new HashSet("New_3"));
 }
 function FindAll(doc){
   const q=[];
@@ -3490,7 +3517,7 @@ function FindAll(doc){
     return recF(1, el);
   }
   loop(doc);
-  return NodeSet(new _c_13("New_2", q));
+  return NodeSet(new HashSet("New_2", q));
 }
 function NodeSet(Item){
   return{$:0, $0:Item};
@@ -3508,7 +3535,7 @@ function Intersect(a, a_1){
   return NodeSet(Intersect_1(a.$0, a_1.$0));
 }
 function UseAnimations(){
-  return _c_46.UseAnimations;
+  return _c_8.UseAnimations;
 }
 function Actions(a){
   return ConcatActions(choose((a_1) => a_1.$==1?Some(a_1.$0):null, ToArray_1(a.$0)));
@@ -3548,9 +3575,9 @@ function Prolong(nextDuration, anim){
   const last=Create(() => anim.Compute(anim.Duration));
   return{Compute:(t) => t>=dur?last.f():comp(t), Duration:nextDuration};
 }
-let _c_43=Lazy((_i) => class Proxy {
+let _c_5=Lazy((_i) => class Proxy {
   static {
-    _c_43=_i(this);
+    _c_5=_i(this);
   }
   static BatchUpdatesEnabled;
   static {
@@ -3563,18 +3590,18 @@ function concat_3(o){
   for(var k_1 in o)r.push.apply(r, o[k_1]);
   return r;
 }
-let _c_44=Lazy((_i) => class $StartupCode_Abbrev {
+let _c_6=Lazy((_i) => class $StartupCode_Abbrev {
   static {
-    _c_44=_i(this);
+    _c_6=_i(this);
   }
   static counter;
   static {
     this.counter=0;
   }
 });
-let _c_45=Lazy((_i) => class $StartupCode_DomUtility {
+let _c_7=Lazy((_i) => class $StartupCode_DomUtility {
   static {
-    _c_45=_i(this);
+    _c_7=_i(this);
   }
   static defaultWrap;
   static wrapMap;
@@ -3591,14 +3618,14 @@ let _c_45=Lazy((_i) => class $StartupCode_DomUtility {
     this.defaultWrap=[0, "", ""];
   }
 });
-let _c_46=Lazy((_i) => class $StartupCode_Animation {
+let _c_8=Lazy((_i) => class $StartupCode_Animation {
   static {
-    _c_46=_i(this);
+    _c_8=_i(this);
   }
   static UseAnimations;
   static CubicInOut;
   static {
-    this.CubicInOut=_c_50.Custom((t) => {
+    this.CubicInOut=Easing.Custom((t) => {
       const t2=t*t;
       return 3*t2-2*(t2*t);
     });
@@ -3637,12 +3664,9 @@ function Concat_1(xs){
   return TreeReduce(Empty_1(), Append_1, x);
 }
 function Empty_1(){
-  return _c_52.Empty;
+  return _c_10.Empty;
 }
-let _c_47=Lazy((_i) => class DynamicAttrNode extends _c {
-  static {
-    _c_47=_i(this);
-  }
+class DynamicAttrNode extends Object_1 {
   push;
   value;
   dirty;
@@ -3675,34 +3699,22 @@ let _c_47=Lazy((_i) => class DynamicAttrNode extends _c {
       this.dirty=true;
     }, view);
   }
-});
-let _c_48=Lazy((_i) => {
-  Force(Error);
-  return class KeyNotFoundException extends Error {
-    static {
-      _c_48=_i(this);
+}
+class KeyNotFoundException extends Error {
+  constructor(i, _1){
+    if(i=="New"){
+      i="New_1";
+      _1="The given key was not present in the dictionary.";
     }
-    static New(){
-      return new this("New");
+    if(i=="New_1"){
+      const message=_1;
+      super(message);
     }
-    static New_1(message){
-      return new this("New_1", message);
-    }
-    constructor(i, _1){
-      if(i=="New"){
-        i="New_1";
-        _1="The given key was not present in the dictionary.";
-      }
-      if(i=="New_1"){
-        const message=_1;
-        super(message);
-      }
-    }
-  };
-});
-let _c_49=Lazy((_i) => class Client {
+  }
+}
+let _c_9=Lazy((_i) => class Client {
   static {
-    _c_49=_i(this);
+    _c_9=_i(this);
   }
   static FloatApplyChecked;
   static FloatGetChecked;
@@ -3734,7 +3746,7 @@ let _c_49=Lazy((_i) => class Client {
     this.EmptyAttr=null;
     this.BoolCheckedApply=(var_1) =>[(el) => {
       el.addEventListener("change", () => var_1.Get()!=el.checked?var_1.Set(el.checked):null);
-    }, (_1) =>(_2) => _2!=null&&_2.$==1?void(_1.checked=_2.$0):null, Map_1(Some, var_1.View)];
+    }, (_1) =>(_2) => _2!=null&&_2.$==1?void(_1.checked=_2.$0):null, Map_1((V) => Some(V), var_1.View)];
     this.StringSet=(el) =>(s_8) => {
       el.value=s_8;
     };
@@ -3760,8 +3772,7 @@ let _c_49=Lazy((_i) => class Client {
       el.value=(new Date(i)).toLocaleString();
     };
     this.DateTimeGetUnchecked=(el) => {
-      let o;
-      let m;
+      let o, m;
       const s_8=el.value;
       if(isBlank(s_8))return Some(-8640000000000000);
       else {
@@ -3802,15 +3813,14 @@ let _c_49=Lazy((_i) => class Client {
       return el.value!=i_1?void(el.value=i_1):null;
     };
     this.IntGetChecked=(el) => {
-      let _1;
-      let o;
+      let _1, o;
       const s_8=el.value;
-      if(isBlank(s_8))_1=(el.checkValidity?el.checkValidity():true)?_c_51.Blank(s_8):_c_51.Invalid(s_8);
+      if(isBlank(s_8))_1=(el.checkValidity?el.checkValidity():true)?CheckedInput.Blank(s_8):CheckedInput.Invalid(s_8);
       else {
         const m=(o=0,[TryParse(s_8, {get:() => o, set:(v) => {
           o=v;
         }}), o]);
-        _1=m[0]?_c_51.Valid(m[1], s_8):_c_51.Invalid(s_8);
+        _1=m[0]?CheckedInput.Valid(m[1], s_8):CheckedInput.Invalid(s_8);
       }
       return Some(_1);
     };
@@ -3838,10 +3848,10 @@ let _c_49=Lazy((_i) => class Client {
     this.FloatGetChecked=(el) => {
       let _1;
       const s_8=el.value;
-      if(isBlank(s_8))_1=(el.checkValidity?el.checkValidity():true)?_c_51.Blank(s_8):_c_51.Invalid(s_8);
+      if(isBlank(s_8))_1=(el.checkValidity?el.checkValidity():true)?CheckedInput.Blank(s_8):CheckedInput.Invalid(s_8);
       else {
         const i=+s_8;
-        _1=isNaN(i)?_c_51.Invalid(s_8):_c_51.Valid(i, s_8);
+        _1=isNaN(i)?CheckedInput.Invalid(s_8):CheckedInput.Valid(i, s_8);
       }
       return Some(_1);
     };
@@ -3850,10 +3860,7 @@ let _c_49=Lazy((_i) => class Client {
     this.FloatApplyChecked=(v) => ApplyValue(g_7, s_7, v);
   }
 });
-let _c_50=Lazy((_i) => class Easing extends _c {
-  static {
-    _c_50=_i(this);
-  }
+class Easing extends Object_1 {
   transformTime;
   static Custom(f){
     return new Easing(f);
@@ -3862,12 +3869,12 @@ let _c_50=Lazy((_i) => class Easing extends _c {
     super();
     this.transformTime=transformTime;
   }
-});
+}
 function Filter_1(ok, set_1){
-  return new _c_13("New_2", filter(ok, ToArray_2(set_1)));
+  return new HashSet("New_2", filter(ok, ToArray_2(set_1)));
 }
 function Except_1(excluded, included){
-  const set_1=new _c_13("New_2", ToArray_2(included));
+  const set_1=new HashSet("New_2", ToArray_2(included));
   set_1.ExceptWith(ToArray_2(excluded));
   return set_1;
 }
@@ -3877,7 +3884,7 @@ function ToArray_2(set_1){
   return arr;
 }
 function Intersect_1(a, b){
-  const set_1=new _c_13("New_2", ToArray_2(a));
+  const set_1=new HashSet("New_2", ToArray_2(a));
   set_1.IntersectWith(ToArray_2(b));
   return set_1;
 }
@@ -3913,22 +3920,22 @@ function ApplyValue(get_1, set_1, var_1){
   }, var_1.View)];
 }
 function StringSet(){
-  return _c_49.StringSet;
+  return _c_9.StringSet;
 }
 function StringGet(){
-  return _c_49.StringGet;
+  return _c_9.StringGet;
 }
 function StringListSet(){
-  return _c_49.StringListSet;
+  return _c_9.StringListSet;
 }
 function StringListGet(){
-  return _c_49.StringListGet;
+  return _c_9.StringListGet;
 }
 function DateTimeSetUnchecked(){
-  return _c_49.DateTimeSetUnchecked;
+  return _c_9.DateTimeSetUnchecked;
 }
 function DateTimeGetUnchecked(){
-  return _c_49.DateTimeGetUnchecked;
+  return _c_9.DateTimeGetUnchecked;
 }
 function FileApplyValue(get_1, set_1, var_1){
   let expectedValue;
@@ -3950,60 +3957,57 @@ function FileApplyValue(get_1, set_1, var_1){
   }, var_1.View)];
 }
 function FileSetUnchecked(){
-  return _c_49.FileSetUnchecked;
+  return _c_9.FileSetUnchecked;
 }
 function FileGetUnchecked(){
-  return _c_49.FileGetUnchecked;
+  return _c_9.FileGetUnchecked;
 }
 function IntSetUnchecked(){
-  return _c_49.IntSetUnchecked;
+  return _c_9.IntSetUnchecked;
 }
 function IntGetUnchecked(){
-  return _c_49.IntGetUnchecked;
+  return _c_9.IntGetUnchecked;
 }
 function IntSetChecked(){
-  return _c_49.IntSetChecked;
+  return _c_9.IntSetChecked;
 }
 function IntGetChecked(){
-  return _c_49.IntGetChecked;
+  return _c_9.IntGetChecked;
 }
 function FloatSetUnchecked(){
-  return _c_49.FloatSetUnchecked;
+  return _c_9.FloatSetUnchecked;
 }
 function FloatGetUnchecked(){
-  return _c_49.FloatGetUnchecked;
+  return _c_9.FloatGetUnchecked;
 }
 function FloatSetChecked(){
-  return _c_49.FloatSetChecked;
+  return _c_9.FloatSetChecked;
 }
 function FloatGetChecked(){
-  return _c_49.FloatGetChecked;
+  return _c_9.FloatGetChecked;
 }
 function StringApply(){
-  return _c_49.StringApply;
+  return _c_9.StringApply;
 }
 function FloatApplyUnchecked(){
-  return _c_49.FloatApplyUnchecked;
+  return _c_9.FloatApplyUnchecked;
 }
 function BoolCheckedApply(){
-  return _c_49.BoolCheckedApply;
+  return _c_9.BoolCheckedApply;
 }
 function DateTimeApplyUnchecked(){
-  return _c_49.DateTimeApplyUnchecked;
+  return _c_9.DateTimeApplyUnchecked;
 }
 function FileApplyUnchecked(){
-  return _c_49.FileApplyUnchecked;
+  return _c_9.FileApplyUnchecked;
 }
 function StringListApply(){
-  return _c_49.StringListApply;
+  return _c_9.StringListApply;
 }
 function isBlank(s){
   return forall_2(IsWhiteSpace, s);
 }
-let _c_51=Lazy((_i) => class CheckedInput {
-  static {
-    _c_51=_i(this);
-  }
+class CheckedInput {
   get Input(){
     return this.$==1?this.$0:this.$==2?this.$0:this.$1;
   }
@@ -4020,13 +4024,18 @@ let _c_51=Lazy((_i) => class CheckedInput {
       $1:inputText
     });
   }
-});
+  $;
+  $0;
+  $1;
+}
 function Children(elem, delims){
   let n;
   if(delims!=null&&delims.$==1){
+    const rdelim=delims.$0[1];
+    const ldelim=delims.$0[0];
     const a=[];
-    n=delims.$0[0].nextSibling;
-    while(n!==delims.$0[1])
+    n=ldelim.nextSibling;
+    while(n!==rdelim)
       {
         a.push(n);
         n=n.nextSibling;
@@ -4109,9 +4118,9 @@ function forceLazy(){
 function cachedLazy(){
   return this.v;
 }
-let _c_52=Lazy((_i) => class $StartupCode_AppendList {
+let _c_10=Lazy((_i) => class $StartupCode_AppendList {
   static {
-    _c_52=_i(this);
+    _c_10=_i(this);
   }
   static Empty;
   static {
@@ -4128,8 +4137,5 @@ function New_4(created, evalOrVal, force){
     f:force
   };
 }
-OnLoad(() => {
-  Main();
-});
-Start_1();
+Main();
 
