@@ -1,0 +1,20 @@
+type file
+id WebSharper.BackgroundFetch
+authors
+    IntelliFactory
+owners
+    IntelliFactory
+repositoryType git
+repositoryUrl https://github.com/dotnet-websharper/BackgroundFetch/
+licenseUrl https://github.com/dotnet-websharper/BackgroundFetch/blob/main/LICENSE.md
+iconUrl https://github.com/dotnet-websharper/core/raw/websharper50/tools/WebSharper.png
+projectUrl https://github.com/dotnet-websharper/BackgroundFetch
+description
+    WebSharper bindings for BackgroundFetch
+tags
+    Web JavaScript F# C#
+files
+    ../WebSharper.BackgroundFetch/bin/Release/netstandard2.0/WebSharper.BackgroundFetch.dll ==> lib/netstandard2.0
+    ../WebSharper.BackgroundFetch/bin/Release/netstandard2.0/WebSharper.BackgroundFetch.xml ==> lib/netstandard2.0
+dependencies
+        WebSharper ~> LOCKEDVERSION:[3]

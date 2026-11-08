@@ -1,22 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <BaseOutputPath>bin\Debug\netstandard2.0\</BaseOutputPath>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Main.fs" />
     <None Include="wsconfig.json" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="WebSharper" Version="10.1.10.687" />
-    <PackageReference Include="WebSharper.FSharp" Version="10.1.10.687" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="9.0.201" />
-  </ItemGroup>
-
+  <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
