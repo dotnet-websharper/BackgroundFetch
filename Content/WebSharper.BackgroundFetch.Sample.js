@@ -62,19 +62,19 @@ function status(){
 function startBackgroundFetch(){
   return new Promise((_1) => {
     _1(new Promise((_2) => {
-      _2(getServiceWorkerRegistration().then((d) => {
+      _2(getServiceWorkerRegistration().then((a) => {
         let r;
-        if(d!=null&&d.$==1){
-          const bgFetch=d.$0.backgroundFetch;
-          return bgFetch==null?(status().Set("Background Fetch API is not available in this browser."),Promise.resolve(null)):bgFetch.fetch("websharper-demo", ["sample-data.txt"], (r={},r.title="WebSharper background fetch demo",r.downloadTotal=1500000,r)).then((d_1) => {
-            set_activeRegistration(d_1);
+        if(a!=null&&a.$==1){
+          const bgFetch=a.$0.backgroundFetch;
+          return bgFetch==null?(status().Set("Background Fetch API is not available in this browser."),Promise.resolve(null)):bgFetch.fetch("websharper-demo", ["sample-data.txt"], (r={},r.title="WebSharper background fetch demo",r.downloadTotal=1500000,r)).then((a_1) => {
+            set_activeRegistration(a_1);
             status().Set("Download started in the background\u2026");
-            const initialTotal=d_1.downloadTotal;
-            const initialDownloaded=d_1.downloaded;
+            const initialTotal=a_1.downloadTotal;
+            const initialDownloaded=a_1.downloaded;
             progress().Set(initialTotal>0?(((((_3) =>(_4) =>(_5) =>(_6) => _3(_4.toFixed(0)+"% \u2014 "+String(_5)+" / "+String(_6)+" bytes"))((x) => x))(initialDownloaded/initialTotal*100))(toInt(initialDownloaded)))(toInt(initialTotal)):"0%");
-            d_1.addEventListener("progress", () => {
-              const downloaded=d_1.downloaded;
-              const total=d_1.downloadTotal;
+            a_1.addEventListener("progress", () => {
+              const downloaded=a_1.downloaded;
+              const total=a_1.downloadTotal;
               return progress().Set((((((_3) =>(_4) =>(_5) =>(_6) => _3(_4.toFixed(0)+"% \u2014 "+String(_5)+" / "+String(_6)+" bytes"))((x) => x))(total>0?downloaded/total*100:0))(toInt(downloaded)))(toInt(total)));
             });
             return Promise.resolve(null);
@@ -82,9 +82,9 @@ function startBackgroundFetch(){
         }
         else return Promise.resolve(null);
       }));
-    })["catch"]((d) => {
-      const a=unwrapExn(d);
-      status().Set("Background fetch failed: "+a.message);
+    })["catch"]((a) => {
+      const a_1=unwrapExn(a);
+      status().Set("Background fetch failed: "+a_1.message);
       return Promise.resolve(null);
     }));
   });
@@ -102,7 +102,7 @@ function cancelBackgroundFetch(){
 function getServiceWorkerRegistration(){
   return new Promise((_1) => {
     const container=globalThis.navigator.serviceWorker;
-    let _2=container==null?(status().Set("Service workers are not supported in this browser."),Promise.resolve(null)):container.register("service-worker.js").then(() => container.ready.then((d) => Promise.resolve(Some(d))));
+    let _2=container==null?(status().Set("Service workers are not supported in this browser."),Promise.resolve(null)):container.register("service-worker.js").then(() => container.ready.then((a) => Promise.resolve(Some(a))));
     _1(_2);
   });
 }
@@ -3235,7 +3235,7 @@ class Event extends TemplateHole {
 }
 function Handler(name, callback){
   return Attr.A3((el) => {
-    el.addEventListener(name, (d) =>(callback(el))(d), false);
+    el.addEventListener(name, (o) =>(callback(el))(o), false);
   });
 }
 function OnAfterRender(callback){
@@ -3272,7 +3272,7 @@ function DynamicCustom(set_1, view){
 class Attr {
   static HandlerImpl(event, q){
     return Attr.A3((el) => {
-      el.addEventListener(event, (d) =>(q(el))(d), false);
+      el.addEventListener(event, (o) =>(q(el))(o), false);
     });
   }
   static Concat(xs){
